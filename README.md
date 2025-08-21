@@ -1,4 +1,4 @@
-# flutter_application_1
+# HRIS Project Mobile
 
 A new Flutter project.
 
