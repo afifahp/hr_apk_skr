@@ -2,8 +2,8 @@ class User {
   final String id;
   final String name;
   final String email;
-  final String role;     // Employee, HR, Chief
-  final String subRole;  // khusus Chief: CFO, CTO, dll
+  final String role;     // employee, hr, chief
+  final String subRole;  // khusus Chief: cfo, cto, dll
   final String token;    // session/JWT token kalau backend kasih
 
   User({
@@ -15,6 +15,7 @@ class User {
     required this.token,
   });
 
+  // Parsing dari JSON
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json["id"] ?? "",
@@ -26,6 +27,7 @@ class User {
     );
   }
 
+  // Convert ke JSON
   Map<String, dynamic> toJson() {
     return {
       "id": id,
@@ -37,7 +39,15 @@ class User {
     };
   }
 
+  // Getter role-based
   bool get isEmployee => role.toLowerCase() == "employee";
   bool get isHR => role.toLowerCase() == "hr";
   bool get isChief => role.toLowerCase() == "chief";
+
+  // SubRole khusus untuk Chief
+  bool get isCFO => isChief && subRole.toLowerCase() == "cfo";
+  bool get isOtherChief => isChief && subRole.toLowerCase() != "cfo";
+
+  // Convenience getter (buat kombinasi logika)
+  bool get canAccessSalary => isEmployee || isHR || isCFO;
 }
