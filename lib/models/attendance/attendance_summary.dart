@@ -1,4 +1,6 @@
-// untuk dashboard HR/Chiefclass AttendanceSummary {
+// untuk dashboard HR/Chief
+
+class AttendanceSummary {
   final int totalHadir;
   final int totalAlpha;
   final int totalIzin;
