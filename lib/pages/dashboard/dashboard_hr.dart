@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/attendance_chart.dart';
 
 class DashboardHR extends StatelessWidget {
   @override

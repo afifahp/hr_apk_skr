@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../models/auth/user.dart';
 import 'dart:convert';
 
 // Import dashboard pages
@@ -38,35 +39,31 @@ class _LoginPageState extends State<LoginPage> {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
-        // contoh response: { "message": "Logged In", "role": "Employee" }
-        final role = data["role"];
+        // Parse ke User model
+        final user = User.fromJson(data);
 
-        if (role == "Employee") {
+        if (user.role == "Employee") {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const DashboardEmployee()),
+            MaterialPageRoute(builder: (_) => DashboardEmployee()),
           );
-        } else if (role == "HR") {
+        } else if (user.role == "HR") {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const DashboardHR()),
+            MaterialPageRoute(builder: (_) => DashboardHR()),
           );
-        } else if (role == "Chief") {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (_) => DashboardChief(subRole: data["subRole"]),
-              ),
-            );
+        } else if (user.role == "Chief") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => DashboardChief(subRole: user.subRole),
+            ),
+          );
         } else {
           setState(() {
             _errorMessage = "Role tidak dikenali";
           });
         }
-      } else {
-        setState(() {
-          _errorMessage = "Login gagal. Cek email/password.";
-        });
       }
     } catch (e) {
       setState(() {
