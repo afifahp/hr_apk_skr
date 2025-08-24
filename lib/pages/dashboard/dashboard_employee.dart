@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
+
 import '../../models/auth/user.dart';
-import '../../widgets/app_button.dart'; // pake AppButton kamu
+import '../../widgets/app_button.dart';
 
 class DashboardEmployee extends StatefulWidget {
   final User user;
@@ -12,22 +18,82 @@ class DashboardEmployee extends StatefulWidget {
 }
 
 class _DashboardEmployeeState extends State<DashboardEmployee> {
-  bool isCheckedIn = false; // status awal check-in
+  bool isCheckedIn = false;
+  bool isLoading = false;
 
-  void _toggleAttendance() {
-    setState(() {
-      isCheckedIn = !isCheckedIn;
-    });
+  final ImagePicker _picker = ImagePicker();
 
-    // TODO: panggil AttendanceService API
-    if (isCheckedIn) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ Berhasil Check-In")),
+  Future<void> _toggleAttendance() async {
+    setState(() => isLoading = true);
+
+    try {
+      // 🔹 1. Minta izin lokasi
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied ||
+            permission == LocationPermission.deniedForever) {
+          setState(() => isLoading = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("❌ Izin lokasi ditolak")),
+          );
+          return;
+        }
+      }
+
+      // 🔹 2. Ambil lokasi
+      Position pos = await Geolocator.getCurrentPosition();
+
+      // 🔹 3. Ambil foto wajah (kamera)
+      final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
+      if (photo == null) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("⚠️ Foto wajah wajib diambil")),
+        );
+        return;
+      }
+
+      // 🔹 4. Upload ke backend (Frappe)
+      final request = http.MultipartRequest(
+        "POST",
+        Uri.parse("https://your-frappe-api.com/api/method/attendance.toggle"),
       );
-    } else {
+
+      request.headers.addAll({
+        "Authorization": "token ${widget.user.token}", // kalau ada token
+      });
+
+      request.fields.addAll({
+        "employee_id": widget.user.id,
+        "lat": pos.latitude.toString(),
+        "lng": pos.longitude.toString(),
+        "action": isCheckedIn ? "checkout" : "checkin",
+      });
+
+      request.files.add(await http.MultipartFile.fromPath("photo", photo.path));
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+      final data = jsonDecode(responseBody);
+
+      if (response.statusCode == 200 && data["ok"] == true) {
+        setState(() => isCheckedIn = !isCheckedIn);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data["message"] ?? "✅ Absensi berhasil")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ ${data["message"] ?? "Gagal absensi"}")),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("🚪 Berhasil Check-Out")),
+        SnackBar(content: Text("⚠️ Error absensi: $e")),
       );
+    } finally {
+      setState(() => isLoading = false);
     }
   }
 
@@ -36,53 +102,15 @@ class _DashboardEmployeeState extends State<DashboardEmployee> {
     return Scaffold(
       body: Column(
         children: [
-          // 🔹 Button Check-In / Check-Out
           Padding(
             padding: const EdgeInsets.all(16),
             child: AppButton(
               type: isCheckedIn ? ButtonType.checkOut : ButtonType.checkIn,
               onPressed: _toggleAttendance,
-            ),
-          ),
-
-          // 🔹 Menu Grid
-          Expanded(
-            child: GridView.count(
-              crossAxisCount: 2,
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildCard(context, "Absensi", Icons.access_time, "/attendance"),
-                _buildCard(context, "Cuti / Izin", Icons.beach_access, "/leave"),
-                _buildCard(context, "Slip Gaji", Icons.receipt_long, "/salary"),
-              ],
+              isLoading: isLoading,
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCard(BuildContext context, String title, IconData icon, String route) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.pushNamed(context, route);
-      },
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 40, color: Colors.blue),
-              const SizedBox(height: 8),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
