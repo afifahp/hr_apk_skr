@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../models/attendance/attendance.dart';
-import '../../models/auth/user.dart'; // <-- import User model
+import '../../models/auth/user.dart';
 
 class AttendancePage extends StatelessWidget {
-  final User user; // user login lengkap
+  final User user; // langsung passing User object
   final List<Attendance> attendances;
 
   const AttendancePage({
@@ -31,7 +31,7 @@ class AttendancePage extends StatelessWidget {
             // === EMPLOYEE ===
             return ListTile(
               leading: const Icon(Icons.calendar_today),
-              title: Text(attendance.statusLabel), // tampilkan WFO/WFA/H/izin/cuti
+              title: Text(attendance.statusLabel),
               subtitle: Text(
                 _formatDate(attendance.date),
                 style: const TextStyle(color: Colors.grey),
@@ -46,10 +46,10 @@ class AttendancePage extends StatelessWidget {
               },
             );
           } else {
-            // === HR / Chief ===
+            // === HR / CO / CFO ===
             return ListTile(
               leading: const Icon(Icons.person),
-              title: Text("Employee: ${attendance.employeeId}"), 
+              title: Text("Employee: ${attendance.employeeId}"),
               subtitle: Text(
                 _formatDate(attendance.date),
                 style: const TextStyle(color: Colors.grey),

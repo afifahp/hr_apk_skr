@@ -6,7 +6,7 @@ import '../../models/salary/salary_slip.dart';
 class SalaryService {
   static const baseUrl = "https://your-frappe-api.com/api/method";
 
-  /// 🔹 Ambil daftar periode slip gaji (riwayat)
+  /// Ambil daftar periode slip gaji (riwayat)
   static Future<List<SalaryHistory>> getSalaryHistory() async {
     final response = await http.get(
       Uri.parse("$baseUrl/salary/get_periods"),
@@ -20,11 +20,19 @@ class SalaryService {
     }
   }
 
-  /// 🔹 Ambil slip gaji untuk periode tertentu
-  static Future<List<SalarySlip>> getSalarySlips(String periodId) async {
-    final response = await http.get(
-      Uri.parse("$baseUrl/salary/slips?period=$periodId"),
-    );
+  /// Ambil slip gaji berdasarkan role
+  static Future<List<SalarySlip>> getSalarySlips({
+    required String periodId,
+    String? employeeId,
+    String? divisionId,
+  }) async {
+    final uri = Uri.parse("$baseUrl/salary/slips").replace(queryParameters: {
+      "period": periodId,
+      if (employeeId != null) "employee_id": employeeId,
+      if (divisionId != null) "division_id": divisionId,
+    });
+
+    final response = await http.get(uri);
 
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);

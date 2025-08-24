@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import '../models/dashboard/dashboard.dart';
 
 class ApiService {
-  static const String baseUrl = "https://your-frappe-api.com/api/method";
+  static const String baseUrl = "http://172.31.62.57:8000";
 
   static Future<DashboardData> fetchDashboardData(String role) async {
     final response = await http.get(
