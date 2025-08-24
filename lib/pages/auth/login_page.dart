@@ -30,7 +30,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await http.post(
-        Uri.parse("https://your-frappe-api.com/api/method/login"),
+        Uri.parse("http://172.31.62.57:8000"),
         body: {
           "usr": _emailController.text,
           "pwd": _passwordController.text,
@@ -81,7 +81,7 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               // 🔹 Logo
               Image.asset(
-                "assets/logo.png", // pastikan ada di pubspec.yaml
+                "assets/images/wip.gif", // pastikan ada di pubspec.yaml
                 height: 80,
               ),
               const SizedBox(height: 12),
