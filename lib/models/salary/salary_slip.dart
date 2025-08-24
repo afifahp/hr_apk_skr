@@ -2,6 +2,7 @@ class SalarySlip {
   final String id;             // ID slip gaji, contoh: "slip_123"
   final String employeeId;     // ID karyawan
   final String employeeName;   // Nama karyawan
+  final String total;   // Nama karyawan
   final String period;         // Periode gaji, contoh: "Oktober 2024"
   final String pdfUrl;         // Link ke file PDF slip gaji
 
@@ -10,6 +11,7 @@ class SalarySlip {
     required this.employeeId,
     required this.employeeName,
     required this.period,
+    required this.total,
     required this.pdfUrl,
   });
 
@@ -19,6 +21,7 @@ class SalarySlip {
       employeeId: json['employee_id'] ?? '',
       employeeName: json['employee_name'] ?? '',
       period: json['period'] ?? '',
+      total: json['total'] ?? '',
       pdfUrl: json['pdf_url'] ?? '',
     );
   }
@@ -29,6 +32,7 @@ class SalarySlip {
       'employee_id': employeeId,
       'employee_name': employeeName,
       'period': period,
+      'total': total,
       'pdf_url': pdfUrl,
     };
   }

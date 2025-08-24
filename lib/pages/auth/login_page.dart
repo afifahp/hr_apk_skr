@@ -42,22 +42,20 @@ class _LoginPageState extends State<LoginPage> {
         // Parse ke User model
         final user = User.fromJson(data);
 
-        if (user.role == "Employee") {
+       if (user.role.toLowerCase() == "employee") {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => DashboardEmployee()),
+            MaterialPageRoute(builder: (_) => DashboardEmployee(user: user)),
           );
-        } else if (user.role == "HR") {
+        } else if (user.role.toLowerCase() == "hr") {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => DashboardHR()),
+            MaterialPageRoute(builder: (_) => DashboardHR(user: user)),
           );
-        } else if (user.role == "Chief") {
+        } else if (user.role.toLowerCase() == "chief") {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (_) => DashboardChief(subRole: user.subRole),
-            ),
+            MaterialPageRoute(builder: (_) => DashboardChief(user: user)),
           );
         } else {
           setState(() {

@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../models/attendance/attendance.dart';
-import '../../utils/role_manager.dart';
+import '../../models/auth/user.dart';
 
 class AttendanceRequestList extends StatelessWidget {
   final List<Attendance> attendances;
-  final String role;
-  final String? subRole;
+  final User user;
 
   const AttendanceRequestList({
     super.key,
     required this.attendances,
-    required this.role,
-    this.subRole,
+    required this.user,
   });
 
   @override
@@ -36,80 +34,67 @@ class AttendanceRequestList extends StatelessWidget {
   }
 
   Widget _buildTrailing(BuildContext context, Attendance attendance) {
-    // EMPLOYEE → tidak ada tombol
-    if (RoleManager.isEmployee(role)) {
+    // === EMPLOYEE → tidak ada tombol
+    if (user.isEmployee) {
       return const SizedBox.shrink();
     }
 
-    // HR → bisa Approve/Reject semua request
-    if (RoleManager.isHR(role)) {
+    // === HR → bisa Approve/Reject semua request
+    if (user.isHR) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           IconButton(
             icon: const Icon(Icons.check, color: Colors.green),
-            onPressed: () {
-              _approveRequest(context, attendance);
-            },
+            onPressed: () => _approveRequest(context, attendance),
           ),
           IconButton(
             icon: const Icon(Icons.close, color: Colors.red),
-            onPressed: () {
-              _rejectRequest(context, attendance);
-            },
+            onPressed: () => _rejectRequest(context, attendance),
           ),
         ],
       );
     }
 
-    // Chief → beda lagi berdasarkan subRole
-    if (RoleManager.isChief(role)) {
-      // CFO → bisa approve semua + salary access
-      if (RoleManager.isCFO(role, subRole)) {
+    // === Chief → dibedakan berdasarkan subRole
+    if (user.isChief) {
+      if (user.isCFO) {
+        // CFO → bisa approve + salary access
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
               icon: const Icon(Icons.check, color: Colors.green),
-              onPressed: () {
-                _approveRequest(context, attendance);
-              },
+              onPressed: () => _approveRequest(context, attendance),
             ),
             IconButton(
               icon: const Icon(Icons.close, color: Colors.red),
-              onPressed: () {
-                _rejectRequest(context, attendance);
-              },
+              onPressed: () => _rejectRequest(context, attendance),
             ),
             IconButton(
               icon: const Icon(Icons.receipt_long, color: Colors.blue),
               onPressed: () {
-                // navigasi ke Salary page
-                Navigator.pushNamed(context, "/salary");
+                Navigator.pushNamed(context, "/salary", arguments: user);
               },
             ),
           ],
         );
+      } else {
+        // Chief lain (CTO, COO, dll) → hanya approve/reject
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.check, color: Colors.green),
+              onPressed: () => _approveRequest(context, attendance),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.red),
+              onPressed: () => _rejectRequest(context, attendance),
+            ),
+          ],
+        );
       }
-
-      // Chief lain (CTO, COO, dll) → hanya approve/reject divisinya
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.check, color: Colors.green),
-            onPressed: () {
-              _approveRequest(context, attendance);
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.red),
-            onPressed: () {
-              _rejectRequest(context, attendance);
-            },
-          ),
-        ],
-      );
     }
 
     // fallback

@@ -49,7 +49,7 @@ class _MainNavigationState extends State<MainNavigation> {
         "label": isChief ? "Kehadiran" : "Pengajuan Lain",
         "icon": isChief ? Icons.assignment : Icons.note_add,
         "page": AttendancePage(
-          role: widget.user.role,
+          user: widget.user,
           attendances: [], // TODO: fetch dari AttendanceService
         ),
       },

@@ -1,23 +1,23 @@
 class SalaryHistory {
-  final String id;       // contoh: "2024-10"
-  final String name;     // contoh: "Oktober 2024"
+  final String id;        // misal "2025-01"
+  final String periodName; // misal "Januari 2025"
 
   SalaryHistory({
     required this.id,
-    required this.name,
+    required this.periodName,
   });
 
   factory SalaryHistory.fromJson(Map<String, dynamic> json) {
     return SalaryHistory(
       id: json['id'] ?? '',
-      name: json['name'] ?? '',
+      periodName: json['period_name'] ?? '',
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'name': name,
+      'period_name': periodName,
     };
   }
 }

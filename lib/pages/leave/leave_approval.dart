@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/app_button.dart';
 import '../../models/auth/user.dart';
 import '../../models/leave/leave_request.dart';
 import '../../services/leave_service.dart';
@@ -102,28 +103,18 @@ class _LeaveApprovalPageState extends State<LeaveApprovalPage> {
               Row(
                 children: [
                   Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                      ),
-                      onPressed:
-                          _isLoading ? null : () => _updateStatus("Approved"),
-                      child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text("Setujui"),
+                    child: AppButton(
+                      type: ButtonType.accept, // ✅ tombol hijau "Terima"
+                      isLoading: _isLoading,
+                      onPressed: () => _updateStatus("Approved"),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                      ),
-                      onPressed:
-                          _isLoading ? null : () => _updateStatus("Rejected"),
-                      child: _isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text("Tolak"),
+                    child: AppButton(
+                      type: ButtonType.decline, // ✅ tombol merah "Tolak"
+                      isLoading: _isLoading,
+                      onPressed: () => _updateStatus("Rejected"),
                     ),
                   ),
                 ],

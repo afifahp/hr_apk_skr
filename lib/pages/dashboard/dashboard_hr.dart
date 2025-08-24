@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
-import '../../widgets/attendance_chart.dart';
+import '../../models/auth/user.dart';
 
 class DashboardHR extends StatelessWidget {
+  final User user;
+
+  const DashboardHR({super.key, required this.user});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Dashboard HR")),
+      appBar: AppBar(title: const Text("Dashboard HR")),
       body: GridView.count(
         crossAxisCount: 2,
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         children: [
           _buildCard(context, "Data Karyawan", Icons.people, "/employee"),
           _buildCard(context, "Absensi", Icons.access_time, "/attendance"),
@@ -31,8 +35,11 @@ class DashboardHR extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 40, color: Colors.green),
-              SizedBox(height: 8),
-              Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
             ],
           ),
         ),

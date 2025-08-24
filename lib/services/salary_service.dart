@@ -7,8 +7,8 @@ class SalaryService {
   static const String baseUrl = "https://your-frappe-api.com/api/method/salary";
 
   /// Ambil daftar periode gaji (misalnya per bulan)
-  static Future<List<SalaryHistory>> getSalaryPeriods() async {
-    final response = await http.get(Uri.parse("$baseUrl/periods"));
+  static Future<List<SalaryHistory>> getSalaryPeriods(String userId) async {
+    final response = await http.get(Uri.parse("$baseUrl/periods?user=$userId"));
 
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
