@@ -1,18 +1,23 @@
 class Attendance {
   final String id;
-  final String employeeId;
+  final String employeeName;
+  final String department;
+  final String statusLabel; // WFH/A, WFO, dsb
   final DateTime date;
-  final String status;
-  final String approvalStatus;
-  final String approverRole;
+  final String reason;
+  final String approver;
+  final String approvalStatus; // PENDING / APPROVED / REJECTED
+
 
   Attendance({
     required this.id,
-    required this.employeeId,
+    required this.employeeName,
+    required this.department,
+    required this.statusLabel,
     required this.date,
-    required this.status,
+    required this.reason,
+    required this.approver,
     required this.approvalStatus,
-    required this.approverRole,
   });
 
   factory Attendance.fromJson(Map<String, dynamic> json) {
