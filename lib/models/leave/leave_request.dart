@@ -4,7 +4,7 @@ class LeaveRequest {
   final String employeeName;
   final String reason;
   final DateTime startDate;
-  final DateTime endDate;
+  final DateTime endDate; //tambahin halfday, leavetype + attachment
   final String status; // Pending, Approved, Rejected
   final String? approver; // siapa yang approve/decline (Chief)
 

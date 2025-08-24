@@ -1,4 +1,4 @@
-class SalarySlip {
+class SalarySlip {   //ini samain sama yg di frappe. tp jujur untuk itung2annya bakal lama banget T_T
   final String id;             // ID slip gaji, contoh: "slip_123"
   final String employeeId;     // ID karyawan
   final String employeeName;   // Nama karyawan

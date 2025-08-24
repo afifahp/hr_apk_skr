@@ -1,4 +1,4 @@
-class WfaRequest {
+class WfaRequest {   //ini bikin doctypenya di frappeeeee
   final String id;
   final String employeeId;
   final DateTime startDate;
