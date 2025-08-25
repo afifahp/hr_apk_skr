@@ -4,7 +4,7 @@ class Employee {
   final String department;
   final String position;
   final String reportTo;
-  final int leaveBalance;
+  final int leaveBalance; //ini udah ada di doctype leave request T_T, tp gak ada di doctype employee
   final List<String> holidays;
 
   Employee({

@@ -27,19 +27,20 @@ class AttendanceRequestList extends StatelessWidget {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Text("Approval: ${attendance.approvalStatus}"),
-            trailing: const Icon(Icons.chevron_right),
+            trailing: _buildTrailing(context, attendance),
             onTap: () {
+              // 🔹 Navigasi ke halaman detail approval
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => AttendanceApprovalPage(
+                  builder: (context) => AttendanceApprovalPage(
                     id: attendance.id,
                     name: attendance.employeeId, // sementara pake employeeId
-                    dept: "-", // ❌ nggak ada di model
-                    reason: "-", // ❌ nggak ada di model
+                    dept: "-", // TODO: ganti ke attendance.dept
+                    reason: "-", // TODO: ganti ke attendance.reason
                     approver: attendance.approverRole,
                     status: attendance.approvalStatus,
-                    isReadOnly: user.isHR || user.isEmployee,
+                    isReadOnly: user.isHR, // ✅ HR hanya bisa lihat
                   ),
                 ),
               );
@@ -48,5 +49,87 @@ class AttendanceRequestList extends StatelessWidget {
         );
       },
     );
+  }
+
+  Widget _buildTrailing(BuildContext context, Attendance attendance) {
+    // === EMPLOYEE → tidak ada tombol
+    if (user.isEmployee) {
+      return const SizedBox.shrink();
+    }
+
+    // === HR → bisa Approve/Reject semua request
+    if (user.isHR) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.check, color: Colors.green),
+            onPressed: () => _approveRequest(context, attendance),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.red),
+            onPressed: () => _rejectRequest(context, attendance),
+          ),
+        ],
+      );
+    }
+
+    // === Chief → dibedakan berdasarkan subRole
+    if (user.isChief) {
+      if (user.isCFO) {
+        // CFO → bisa approve + salary access
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.check, color: Colors.green),
+              onPressed: () => _approveRequest(context, attendance),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.red),
+              onPressed: () => _rejectRequest(context, attendance),
+            ),
+            IconButton(
+              icon: const Icon(Icons.receipt_long, color: Colors.blue),
+              onPressed: () {
+                Navigator.pushNamed(context, "/salary", arguments: user);
+              },
+            ),
+          ],
+        );
+      } else {
+        // Chief lain (CTO, COO, dll) → hanya approve/reject
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.check, color: Colors.green),
+              onPressed: () => _approveRequest(context, attendance),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, color: Colors.red),
+              onPressed: () => _rejectRequest(context, attendance),
+            ),
+          ],
+        );
+      }
+    }
+
+    // fallback
+    return const SizedBox.shrink();
+  }
+
+  void _approveRequest(BuildContext context, Attendance attendance) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Approved request: ${attendance.id}")),
+    );
+    // TODO: panggil service approve API
+  }
+
+  void _rejectRequest(BuildContext context, Attendance attendance) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Rejected request: ${attendance.id}")),
+    );
+    // TODO: panggil service reject API
   }
 }

@@ -18,12 +18,12 @@ class User {
   // Parsing dari JSON
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json["id"] ?? "",
-      name: json["name"] ?? "",
-      email: json["email"] ?? "",
-      role: json["role"] ?? "",
-      subRole: json["subRole"] ?? "",
-      token: json["token"] ?? "",
+        id: json["id"] ?? "",
+        name: json["name"] ?? "",
+        email: json["email"] ?? "",
+        role: json["role"] ?? "",
+        subRole: json["subRole"] ?? "",
+        token: json["token"] ?? "",
     );
   }
 
