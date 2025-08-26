@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'models/auth/user.dart';
 import 'pages/auth/login_page.dart';
 
+import 'pages/salary/salary_page.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -23,8 +25,10 @@ class MyApp extends StatelessWidget {
             const Scaffold(body: Center(child: Text("Leave Page"))),
         "/salary": (context) =>
             const Scaffold(body: Center(child: Text("Salary Page"))),
-        "/employee": (context) =>
-            const Scaffold(body: Center(child: Text("Employee Page"))),
+        "/employee": (context) {
+  final user = ModalRoute.of(context)!.settings.arguments as User;
+  return SalaryPage(user: user);
+},
         "/leaveApproval": (context) =>
             const Scaffold(body: Center(child: Text("Leave Approval Page"))),
       },
