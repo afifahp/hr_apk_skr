@@ -1,38 +1,53 @@
 class LeaveRequest {
   final int id;
-  final String employeeId;
   final String employeeName;
-  final String reason;
-  final DateTime startDate;
-  final DateTime endDate; //tambahin halfday, leavetype + attachment
-  final String status; // Pending, Approved, Rejected
-  final String? approver; // siapa yang approve/decline (Chief)
+  final String jobPosition;
+  final String department;
+  final String descLeave;
+  final DateTime fromDate;
+  final DateTime toDate;
+  final String leaveType;
+  final String status;
+  final String leaveApprover; // <- fix
+  final int halfDay; // 0 atau 1
+  final String? attachment;
 
   LeaveRequest({
     required this.id,
-    required this.employeeId,
     required this.employeeName,
-    required this.reason,
-    required this.startDate,
-    required this.endDate,
+    required this.jobPosition,
+    required this.department,
+    required this.descLeave,
+    required this.fromDate,
+    required this.toDate,
+    required this.leaveType,
     required this.status,
-    this.approver,
+    required this.leaveApprover, // <- fix
+    required this.halfDay,
+    this.attachment,
   });
 
+  /// Getter untuk range tanggal
   String get dateRange =>
-      "${startDate.toString().split(' ')[0]} - ${endDate.toString().split(' ')[0]}";
+      "${fromDate.toString().split(' ')[0]} - ${toDate.toString().split(' ')[0]}";
 
   /// Convert JSON ke model
   factory LeaveRequest.fromJson(Map<String, dynamic> json) {
     return LeaveRequest(
       id: json['id'] ?? 0,
-      employeeId: json['employee_id'] ?? '',
       employeeName: json['employee_name'] ?? '',
-      reason: json['reason'] ?? '',
-      startDate: DateTime.tryParse(json['start_date'] ?? '') ?? DateTime.now(),
-      endDate: DateTime.tryParse(json['end_date'] ?? '') ?? DateTime.now(),
+      jobPosition: json['job_position'] ?? '',
+      department: json['department'] ?? '',
+      descLeave: json['desc_leave'] ?? '',
+      fromDate: DateTime.tryParse(json['from_date'] ?? '') ?? DateTime.now(),
+      toDate: DateTime.tryParse(json['to_date'] ?? '') ?? DateTime.now(),
+      leaveType: json['leave_type'] ?? 'Tahunan',
       status: json['status'] ?? 'Pending',
-      approver: json['approver'],
+      leaveApprover: json['leave_approver'] ?? '', // <- fix
+      halfDay: json['half_day'] is int
+          ? json['half_day']
+          : int.tryParse(json['half_day']?.toString() ?? '0') ?? 0,
+      attachment: json['attachment'],
     );
   }
 
@@ -40,13 +55,17 @@ class LeaveRequest {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'employee_id': employeeId,
       'employee_name': employeeName,
-      'reason': reason,
-      'start_date': startDate.toIso8601String(),
-      'end_date': endDate.toIso8601String(),
+      'job_position': jobPosition,
+      'department': department,
+      'desc_leave': descLeave,
+      'from_date': fromDate.toIso8601String(),
+      'to_date': toDate.toIso8601String(),
+      'leave_type': leaveType,
       'status': status,
-      'approver': approver,
+      'leave_approver': leaveApprover, // <- fix
+      'half_day': halfDay,
+      'attachment': attachment,
     };
   }
 }

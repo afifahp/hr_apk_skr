@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class Popup {
+class PopupMessage {
   /// Popup konfirmasi (contoh: Accept / Decline / Delete)
   static Future<bool?> confirm({
     required BuildContext context,
@@ -12,15 +12,30 @@ class Popup {
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(title),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(5),
+        ),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(cancelText),
+            child: Text(
+              cancelText,
+              style: const TextStyle(color: Colors.grey),
+            ),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text(confirmText),
           ),
@@ -30,19 +45,45 @@ class Popup {
   }
 
   /// Popup info (misalnya notifikasi berhasil atau gagal)
-  static Future<void> info({
+  static Future<void> show({
     required BuildContext context,
     String title = "Informasi",
     required String message,
+    bool success = true,
     String buttonText = "OK",
   }) {
     return showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(title),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(5),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              success ? Icons.check_circle : Icons.error,
+              color: success ? Colors.green : Colors.red,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              title,
+              style: TextStyle(
+                color: success ? Colors.green : Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
         content: Text(message),
         actions: [
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: success ? Colors.green : Colors.red,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
             onPressed: () => Navigator.of(ctx).pop(),
             child: Text(buttonText),
           ),
@@ -59,11 +100,14 @@ class Popup {
       builder: (_) => WillPopScope(
         onWillPop: () async => false, // user tidak bisa back
         child: AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(5),
+          ),
           content: Row(
             children: [
               const CircularProgressIndicator(),
               const SizedBox(width: 16),
-              Text(message),
+              Expanded(child: Text(message)),
             ],
           ),
         ),
@@ -73,6 +117,8 @@ class Popup {
 
   /// Tutup popup apapun
   static void close(BuildContext context) {
-    Navigator.of(context, rootNavigator: true).pop();
+    if (Navigator.of(context, rootNavigator: true).canPop()) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
   }
 }

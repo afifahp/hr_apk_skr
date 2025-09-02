@@ -1,32 +1,32 @@
 class Employee {
   final String id;
-  final String name;
+  final String employeeName;   // alias untuk full_name atau employee_name
   final String department;
-  final String position;
-  final String reportTo;
-  final int leaveBalance; //ini udah ada di doctype leave request T_T, tp gak ada di doctype employee
-  final List<String> holidays;
+  final String jobPosition;   // alias untuk job_position atau designation
+  final String status;
+  final int leaveBalance;      // sisa cuti
+  final List<Map<String, dynamic>> upcomingHolidays; // hari libur mendatang
 
   Employee({
     required this.id,
-    required this.name,
+    required this.employeeName,
     required this.department,
-    required this.position,
-    required this.reportTo,
-    required this.leaveBalance,
-    required this.holidays,
+    required this.jobPosition,
+    required this.status,
+    this.leaveBalance = 0,
+    this.upcomingHolidays = const [],
   });
 
   factory Employee.fromJson(Map<String, dynamic> json) {
     return Employee(
-      id: json["id"] ?? "-",
-      name: json["name"] ?? "-",
-      department: json["department"] ?? "-",
-      position: json["position"] ?? "-",
-      reportTo: json["report_to"] ?? "-",
-      leaveBalance: json["leave_balance"] ?? 0,
-      holidays: (json["holidays"] as List<dynamic>?)
-              ?.map((h) => h.toString())
+      id: json['id'] ?? json['name'] ?? '',
+      employeeName: json['full_name'] ?? json['employee_name'] ?? '',
+      department: json['department'],
+      jobPosition: json['job_position'] ?? json['designation'],
+      status: json['status'],
+      leaveBalance: json['leave_balance'] ?? 0,
+      upcomingHolidays: (json['upcoming_holidays'] as List?)
+              ?.map((e) => Map<String, dynamic>.from(e))
               .toList() ??
           [],
     );
@@ -35,12 +35,12 @@ class Employee {
   Map<String, dynamic> toJson() {
     return {
       "id": id,
-      "name": name,
+      "employee_name": employeeName,
       "department": department,
-      "position": position,
-      "report_to": reportTo,
+      "job_position": jobPosition,
+      "status": status,
       "leave_balance": leaveBalance,
-      "holidays": holidays,
+      "upcoming_holidays": upcomingHolidays,
     };
   }
 }

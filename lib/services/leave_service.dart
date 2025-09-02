@@ -1,74 +1,158 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/leave/leave_request.dart';
 
 class LeaveService {
-  final String baseUrl = "https://your-frappe-api.com/api/method";
+  /// Base URL backend Frappe/ERPNext
+  static const String baseUrl = "http://127.0.0.1:8000/api/resource";
 
-  /// Ambil semua leave request sesuai role
-  /// - HR  : semua karyawan
-  /// - CO  : hanya divisinya
-  /// - EMP : hanya dirinya sendiri
-  Future<List<LeaveRequest>> fetchLeaveRequests(String role, String employeeId,
-      {String? divisionId}) async {
-    final url = Uri.parse("$baseUrl/leave/list");
+  /// Ambil header auth (token / bearer)
+  Future<Map<String, String>> _getHeaders({bool isMultipart = false}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? "";
 
-    final response = await http.post(url, body: {
-      "role": role,
-      "employee_id": employeeId,
-      "division_id": divisionId ?? "",
-    });
+    // kalau token formatnya "api_key:api_secret"
+    final auth = token.contains(":") ? "token $token" : "Bearer $token";
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as List<dynamic>;
-      return data.map((e) => LeaveRequest.fromJson(e)).toList();
-    } else {
-      throw Exception("Gagal mengambil data cuti");
-    }
+    return {
+      if (!isMultipart) "Content-Type": "application/json",
+      "Authorization": auth,
+    };
   }
 
-  /// Karyawan buat pengajuan cuti
-  Future<bool> createLeaveRequest(LeaveRequest request) async {
-    final url = Uri.parse("$baseUrl/leave/create");
-
-    final response = await http.post(url, body: request.toJson());
-
-    if (response.statusCode == 200) {
-      return true;
-    } else {
-      return false;
-    }
+  /// Helper decode response JSON (support data/message)
+  dynamic _extractData(http.Response res) {
+    final decoded = jsonDecode(res.body);
+    return decoded['data'] ?? decoded['message'] ?? decoded;
   }
 
-  /// Chief update status pengajuan (approve/decline)
-  Future<bool> updateLeaveStatus(int requestId, String status,
-      {required String approver}) async {
-    final url = Uri.parse("$baseUrl/leave/update");
+  /// Ambil semua leave request
+  Future<List<LeaveRequest>> fetchLeaveRequests(
+    String role,
+    String userId, {
+    String? divisionId,
+  }) async {
+    final headers = await _getHeaders();
+    final url = Uri.parse("$baseUrl/Leave Request?fields=[\"*\"]");
 
-    final response = await http.post(url, body: {
-      "id": requestId.toString(),
+    final res = await http.get(url, headers: headers);
+    if (res.statusCode != 200) {
+      throw Exception("Gagal ambil data cuti: ${res.statusCode} ${res.body}");
+    }
+
+    final raw = _extractData(res);
+    if (raw == null) return [];
+    final list = raw is List
+        ? raw
+        : raw is Map && raw["data"] is List
+            ? raw["data"]
+            : [raw];
+    return list.map<LeaveRequest>((e) => LeaveRequest.fromJson(e)).toList();
+  }
+
+  /// Ambil leave request berdasarkan user (auth)
+  Future<List<LeaveRequest>> fetchLeaveRequestsAuth(
+    String role,
+    String userId, {
+    String? divisionId,
+  }) async {
+    final headers = await _getHeaders();
+    final url = Uri.parse(
+      "$baseUrl/Leave Request?filters=" +
+          Uri.encodeComponent(jsonEncode({
+            "id": userId, // pakai id, bukan employee_id
+          })) +
+          "&fields=[\"*\"]",
+    );
+
+    final res = await http.get(url, headers: headers);
+    if (res.statusCode != 200) {
+      throw Exception(
+          "Gagal ambil data cuti (auth): ${res.statusCode} ${res.body}");
+    }
+
+    final raw = _extractData(res);
+    if (raw == null) return [];
+    final list = raw is List
+        ? raw
+        : raw is Map && raw["data"] is List
+            ? raw["data"]
+            : [raw];
+    return list.map<LeaveRequest>((e) => LeaveRequest.fromJson(e)).toList();
+  }
+
+  /// Buat leave request baru
+  Future<bool> createLeaveRequest(
+    LeaveRequest request, {
+    String? filePath,
+    Uint8List? fileBytes,
+    String? fileName,
+  }) async {
+    final url = Uri.parse("$baseUrl/Leave Request");
+    final headers = await _getHeaders();
+
+    final fromDate = request.fromDate.toIso8601String().substring(0, 10);
+    final toDate = request.toDate.toIso8601String().substring(0, 10);
+
+    final body = {
+      "id": request.id, // pakai id
+      "employee_name": request.employeeName,
+      "job_position": request.jobPosition,
+      "department": request.department,
+      "leave_type": request.leaveType,
+      "from_date": fromDate,
+      "to_date": toDate,
+      "half_day": request.halfDay,
+      "leave_approver": request.leaveApprover,
+      "status": request.status,
+      "desc_leave": request.descLeave,
+    };
+
+    final res = await http.post(url, headers: headers, body: jsonEncode(body));
+    print("Create leave → ${res.statusCode} ${res.body}");
+
+    if (res.statusCode != 200) {
+      throw Exception("Gagal create cuti: ${res.statusCode} ${res.body}");
+    }
+    return true;
+  }
+
+  /// Update status cuti (approve / reject)
+  Future<bool> updateLeaveStatus(
+    String requestId,
+    String status, {
+    required String approver,
+  }) async {
+    final headers = await _getHeaders();
+    final url = Uri.parse("$baseUrl/Leave Request/$requestId");
+
+    final body = jsonEncode({
       "status": status,
-      "approver": approver,
+      "leave_approver": approver,
     });
 
-    if (response.statusCode == 200) {
-      return true;
-    } else {
-      return false;
+    final res = await http.put(url, headers: headers, body: body);
+    print("Update leave → ${res.statusCode} ${res.body}");
+
+    if (res.statusCode != 200) {
+      throw Exception("Gagal update cuti: ${res.statusCode} ${res.body}");
     }
+    return true;
   }
 
-  /// Ambil detail leave request by ID
-  Future<LeaveRequest> fetchLeaveDetail(int id) async {
-    final url = Uri.parse("$baseUrl/leave/detail/$id");
+  /// Ambil detail cuti berdasarkan ID
+  Future<LeaveRequest> fetchLeaveDetail(String id) async {
+    final headers = await _getHeaders();
+    final url = Uri.parse("$baseUrl/Leave Request/$id");
 
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return LeaveRequest.fromJson(data);
-    } else {
-      throw Exception("Gagal mengambil detail cuti");
+    final res = await http.get(url, headers: headers);
+    if (res.statusCode != 200) {
+      throw Exception(
+          "Gagal mengambil detail cuti: ${res.statusCode} ${res.body}");
     }
+    final data = _extractData(res);
+    return LeaveRequest.fromJson(data);
   }
 }

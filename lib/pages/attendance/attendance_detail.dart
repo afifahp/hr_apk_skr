@@ -25,10 +25,10 @@ class AttendanceDetailPage extends StatelessWidget {
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 12),
 
-            _buildDetailRow("ID", attendance.employeeId),
-            _buildDetailRow("Nama", "Karyawan 1"), // nanti ambil dari DB karyawan
-            _buildDetailRow("Posisi/Dept", "QA - IT"), // sementara dummy
-            _buildDetailRow("Kehadiran", "Hadir - ${attendance.status}"),
+            _buildDetailRow("ID", attendance.employee),          // ✅ pakai employee
+            _buildDetailRow("Nama", attendance.employeeName),    // ✅ pakai employeeName
+            _buildDetailRow("Dept", attendance.department),      // ✅ department dari model
+            _buildDetailRow("Kehadiran", attendance.statusLabel),
 
             const SizedBox(height: 16),
             const Text("Jam",
@@ -38,15 +38,16 @@ class AttendanceDetailPage extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("Check-in 08:30"), // sementara hardcode
-                Text(
-                  "Terlambat 30 menit",
-                  style: TextStyle(color: Colors.red.shade400, fontSize: 12),
-                )
+                Text("Check-in ${attendance.checkIn ?? '--:--'}"),  // ✅ dari model
+                if (attendance.checkIn != null)
+                  Text(
+                    "Terlambat?", // TODO: bisa hitung keterlambatan dari aturan jam masuk
+                    style: TextStyle(color: Colors.red.shade400, fontSize: 12),
+                  )
               ],
             ),
             const SizedBox(height: 8),
-            Text("Check-out  --:--"),
+            Text("Check-out ${attendance.checkOut ?? '--:--'}"),   // ✅ dari model
 
             if (isWFH) ...[
               const SizedBox(height: 16),
@@ -62,7 +63,7 @@ class AttendanceDetailPage extends StatelessWidget {
                   border: Border.all(color: Colors.grey.shade300),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text("WFH karena urusan keluarga"),
+                child: const Text("WFH karena urusan keluarga"), // TODO: tambahin field reason di model
               ),
 
               const SizedBox(height: 16),
@@ -70,13 +71,13 @@ class AttendanceDetailPage extends StatelessWidget {
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
 
-              _buildDetailRow("Pemberi Izin", attendance.approverRole),
+              _buildDetailRow("Pemberi Izin", attendance.approverRole ?? "-"),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text("Status"),
                   Text(
-                    attendance.approvalStatus.toUpperCase(),
+                    (attendance.approvalStatus ?? "pending").toUpperCase(),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: attendance.approvalStatus == "approved"

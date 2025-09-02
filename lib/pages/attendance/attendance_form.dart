@@ -49,7 +49,7 @@ class _AttendanceFormState extends State<AttendanceForm> {
     super.dispose();
   }
 
-  void _confirmAttendance() async {
+  void _submitRequest() async {
     setState(() => isLoading = true);
 
     // simulasi delay submit
@@ -58,16 +58,8 @@ class _AttendanceFormState extends State<AttendanceForm> {
     if (mounted) {
       setState(() => isLoading = false);
 
-      // Setelah submit → redirect ke AttendanceReqList
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AttendanceRequestList(
-            attendances: [], // TODO: isi data request dari backend/dummy
-            user: widget.user,
-          ),
-        ),
-      );
+      // 🔹 Setelah submit → langsung balik ke dashboard
+      Navigator.popUntil(context, (route) => route.isFirst);
     }
   }
 
@@ -75,7 +67,7 @@ class _AttendanceFormState extends State<AttendanceForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Form Attendance"),
+        title: const Text("Permintaan WFH/A"),
         centerTitle: true,
       ),
       body: Padding(
@@ -84,12 +76,12 @@ class _AttendanceFormState extends State<AttendanceForm> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Nama
-            Text("Nama:   ${widget.employeeName}",
+            Text("Nama:   ${widget.user.employeeName}",
                 style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 8),
 
             // Dept
-            Text("Dept :   ${widget.department}",
+            Text("Departmen :   ${widget.user.department}",
                 style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 16),
 
@@ -116,7 +108,7 @@ class _AttendanceFormState extends State<AttendanceForm> {
             DottedBorder(
               borderType: BorderType.RRect,
               radius: const Radius.circular(8),
-              dashPattern: const [6, 3], // panjang strip, jarak
+              dashPattern: const [6.0, 3.0],
               color: Colors.black54,
               child: Container(
                 padding: const EdgeInsets.all(8),
@@ -132,13 +124,14 @@ class _AttendanceFormState extends State<AttendanceForm> {
             ),
             const Spacer(),
 
-            // Tombol konfirmasi
+            // Tombol Ajukan Permintaan
             SizedBox(
               width: double.infinity,
               child: AppButton(
-                type: ButtonType.konfirmasi,
+                type: ButtonType.ajukan,
                 isLoading: isLoading,
-                onPressed: _confirmAttendance,
+                onPressed: _submitRequest,
+                label: "Ajukan Permintaan", // ✅ ubah label
               ),
             ),
           ],

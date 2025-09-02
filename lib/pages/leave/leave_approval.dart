@@ -33,26 +33,30 @@ class _LeaveApprovalPageState extends State<LeaveApprovalPage> {
     setState(() => _isLoading = true);
 
     final success = await _leaveService.updateLeaveStatus(
-      _currentRequest.id,
+      _currentRequest.id.toString(),
       status,
       approver: widget.user.name,
     );
 
     setState(() => _isLoading = false);
 
-    if (success) {
-      setState(() {
-        _currentRequest = LeaveRequest(
-          id: _currentRequest.id,
-          employeeId: _currentRequest.employeeId,
-          employeeName: _currentRequest.employeeName,
-          reason: _currentRequest.reason,
-          startDate: _currentRequest.startDate,
-          endDate: _currentRequest.endDate,
-          status: status,
-          approver: widget.user.name,
-        );
-      });
+   if (success) {
+  setState(() {
+    _currentRequest = LeaveRequest(
+      id: _currentRequest.id,
+      employeeName: _currentRequest.employeeName,
+      jobPosition: _currentRequest.jobPosition,
+      department: _currentRequest.department,
+      descLeave: _currentRequest.descLeave,
+      fromDate: _currentRequest.fromDate,
+      toDate: _currentRequest.toDate,
+      leaveType: _currentRequest.leaveType,
+      status: status, // ✅ status update
+      leaveApprover: widget.user.employeeName, // ✅ ambil nama user login
+      halfDay: _currentRequest.halfDay,
+      attachment: _currentRequest.attachment,
+    );
+  });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Pengajuan ${status.toLowerCase()}")),
@@ -78,9 +82,19 @@ class _LeaveApprovalPageState extends State<LeaveApprovalPage> {
             Text("Nama: ${_currentRequest.employeeName}",
                 style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 8),
-            Text("Tanggal: ${_currentRequest.dateRange}"),
+            Text("Departmen: ${_currentRequest.department}",
+                style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 8),
-            Text("Alasan: ${_currentRequest.reason}"),
+            Text("Jenis Cuti/Izin: ${_currentRequest.leaveType}"),
+            const SizedBox(height: 8),
+            Text("Tanggal: ${_currentRequest.dateRange}"),  
+            const SizedBox(height: 8),
+            Text("Keterangan: ${_currentRequest.descLeave}"),
+            const SizedBox(height: 8),
+            if (_currentRequest.attachment!.isNotEmpty)
+              Text("Lampiran: ${_currentRequest.attachment}"),  
+            const SizedBox(height: 16),
+            Text("Approver: ${_currentRequest.leaveApprover.isNotEmpty ? _currentRequest.leaveApprover : '-'}"),
             const SizedBox(height: 8),
             Text("Status: ${_currentRequest.status}",
                 style: TextStyle(
@@ -93,8 +107,8 @@ class _LeaveApprovalPageState extends State<LeaveApprovalPage> {
                 )),
             const SizedBox(height: 16),
 
-            if (_currentRequest.approver != null)
-              Text("Disetujui oleh: ${_currentRequest.approver}"),
+            if (_currentRequest.leaveApprover.isNotEmpty)
+              Text("Disetujui oleh: ${_currentRequest.leaveApprover}"),
 
             const Spacer(),
 

@@ -1,18 +1,29 @@
-//list attendance keseluruhan
-
+// file: attendance_page.dart
 import 'package:flutter/material.dart';
 import '../../models/attendance/attendance.dart';
 import '../../models/auth/user.dart';
+import '../../services/attendance_service.dart';
 
-class AttendancePage extends StatelessWidget {
-  final User user; // langsung passing User object
-  final List<Attendance> attendances;
+class AttendancePage extends StatefulWidget {
+  final User user;
 
   const AttendancePage({
     super.key,
     required this.user,
-    required this.attendances,
   });
+
+  @override
+  State<AttendancePage> createState() => _AttendancePageState();
+}
+
+class _AttendancePageState extends State<AttendancePage> {
+  late Future<List<Attendance>> _futureAttendances;
+
+  @override
+  void initState() {
+    super.initState();
+    _futureAttendances = AttendanceService.getAllAttendance();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,48 +35,68 @@ class AttendancePage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: ListView.builder(
-        itemCount: attendances.length,
-        itemBuilder: (context, index) {
-          final attendance = attendances[index];
-
-          if (user.isEmployee) {
-            // === EMPLOYEE ===
-            return ListTile(
-              leading: const Icon(Icons.calendar_today),
-              title: Text(attendance.statusLabel),
-              subtitle: Text(
-                _formatDate(attendance.date),
-                style: const TextStyle(color: Colors.grey),
-              ),
-              trailing: const Icon(Icons.info_outline),
-              onTap: () {
-                Navigator.pushNamed(
-                  context,
-                  '/attendance/detail',
-                  arguments: attendance,
-                );
-              },
-            );
-          } else {
-            // === HR / CO / CFO ===
-            return ListTile(
-              leading: const Icon(Icons.person),
-              title: Text("Employee: ${attendance.employeeId}"),
-              subtitle: Text(
-                _formatDate(attendance.date),
-                style: const TextStyle(color: Colors.grey),
-              ),
-              trailing: const Icon(Icons.info_outline),
-              onTap: () {
-                Navigator.pushNamed(
-                  context,
-                  '/attendance/detail',
-                  arguments: attendance,
-                );
-              },
-            );
+      body: FutureBuilder<List<Attendance>>(
+        future: _futureAttendances,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
           }
+
+          if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          }
+
+          final attendances = snapshot.data ?? [];
+
+          if (attendances.isEmpty) {
+            return const Center(child: Text("Belum ada data kehadiran"));
+          }
+
+          return ListView.builder(
+            itemCount: attendances.length,
+            itemBuilder: (context, index) {
+              final attendance = attendances[index];
+
+              // Kalau employee biasa
+              if (widget.user.isEmployee) {
+                return ListTile(
+                  leading: const Icon(Icons.calendar_today),
+                  title: Text(attendance.statusLabel),
+                  subtitle: Text(
+                    _formatDate(attendance.attendanceDate),
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  trailing: const Icon(Icons.info_outline),
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/attendance/detail',
+                      arguments: attendance,
+                    );
+                  },
+                );
+              } 
+              // Kalau chief/hr/admin dll
+              else {
+                return ListTile(
+                  leading: const Icon(Icons.person),
+                  title: Text("Employee: ${attendance.employeeName} - ${attendance.statusLabel}"),
+                  subtitle: Text(
+                    _formatDate(attendance.attendanceDate),
+                    style: const TextStyle(color: Colors.grey),
+                  ),
+                  trailing: const Icon(Icons.info_outline),
+                  onTap: () {
+                    Navigator.pushNamed(
+                      context,
+                      '/attendance/detail',
+                      arguments: attendance,
+                    );
+                  },
+                );
+              }
+            },
+          );
         },
       ),
     );

@@ -20,15 +20,13 @@ class _DashboardChiefState extends State<DashboardChief> {
   Widget build(BuildContext context) {
     final user = widget.user;
 
-    // Tabs khusus Chief (selain CFO gak ada Gaji)
-    final bool isCFO = user.subRole.toLowerCase() == "cfo";
-
+  
     final List<Map<String, dynamic>> tabs = [
       {
         "label": "Home",
         "icon": Icons.home,
         "page": Center(
-          child: Text("Dashboard Chief ${user.subRole} - ${user.name}"),
+          child: Text("Dashboard Chief ${user.subRole} - ${user.employeeName}"),
         ),
       },
       {
@@ -39,20 +37,9 @@ class _DashboardChiefState extends State<DashboardChief> {
       {
         "label": "Kehadiran",
         "icon": Icons.assignment,
-        "page": AttendancePage(
-          user: user,
-          attendances: [], // nanti diisi dari API
-        ),
+        "page": AttendancePage(user: user),
       },
     ];
-
-    if (isCFO) {
-      tabs.add({
-        "label": "Gaji",
-        "icon": Icons.attach_money,
-        "page": SalaryPage(user: user),
-      });
-    }
 
     return Scaffold(
       body: tabs[_currentIndex]["page"],

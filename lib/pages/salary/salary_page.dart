@@ -39,7 +39,7 @@ class _SalaryPageState extends State<SalaryPage> {
     try {
       final slips = await SalaryService.getSalarySlips(
         periodId: "", // backend bisa abaikan kalau ada employeeId
-        employeeId: widget.user.id,
+        // employeeId: widget.user.id,
       );
       setState(() {
         _slips = slips;
@@ -55,25 +55,41 @@ class _SalaryPageState extends State<SalaryPage> {
 
   /// 🔹 HR / CFO / Chief Officer → ambil daftar periode
   Future<void> _loadPeriods() async {
-    try {
-      final periods = await SalaryService.getSalaryHistory();
-      setState(() {
-        _periods = periods;
-        if (periods.isNotEmpty) {
-          _selectedPeriod = periods.first.id; // default ke periode terbaru
-        }
-      });
+  setState(() {
+    _isLoading = true;
+  });
 
-      if (_selectedPeriod != null) {
-        _loadSlips(_selectedPeriod!);
+  try {
+    final periods = await SalaryService.getSalaryHistory();
+
+    setState(() {
+      _periods = periods;
+
+      // default pilih periode terbaru
+      if (periods.isNotEmpty) {
+        _selectedPeriod = periods.first.name;
       }
-    } catch (e) {
-      setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("⚠️ Error load periode: $e")),
-      );
+      _isLoading = false;
+    });
+
+    // kalau ada periode terpilih, load slip sesuai periode itu
+    if (_selectedPeriod != null) {
+      await _loadSlips(_selectedPeriod!);
     }
+  } catch (e) {
+    setState(() {
+      _isLoading = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("⚠️ Error load periode: $e"),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
+}
+
 
   /// 🔹 Load slip sesuai role
   Future<void> _loadSlips(String periodId) async {
@@ -120,8 +136,8 @@ class _SalaryPageState extends State<SalaryPage> {
                       value: _selectedPeriod,
                       items: _periods.map((p) {
                         return DropdownMenuItem(
-                          value: p.id,
-                          child: Text(p.periodName),
+                          value: p.name,
+                          child: Text(p.name),
                         );
                       }).toList(),
                       onChanged: (val) {
@@ -143,8 +159,8 @@ class _SalaryPageState extends State<SalaryPage> {
                             final slip = _slips[index];
                             return Card(
                               child: ListTile(
-                                title: Text("Periode: ${slip.period}"),
-                                subtitle: Text("Total: ${slip.total}"),
+                                title: Text("Periode: ${slip.name}"),
+                                subtitle: Text("Total: ${slip.net_pay}"),
                                 onTap: () {
                                   Navigator.push(
                                     context,

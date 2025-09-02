@@ -1,68 +1,86 @@
-class Attendance { //untuk frappe, fieldnya dari sini
-  final String id;
-  final String employeeId;
-  final String name;        // ✅ nama karyawan
-  final String dept;        // ✅ dept / posisi
-  final DateTime date;
-  final String status;
-  final String approvalStatus;
-  final String approverRole;
-  final String reason;      // ✅ alasan/keterangan
+class Attendance {
+  final String id;              // primary key (misalnya "name" di Frappe)
+  final String employee;        // ID karyawan
+  final String employeeName;    // nama karyawan
+  final String department;      // departemen karyawan
+  final String status;          // Hadir/Alpa/Cuti/WFH dll
+  final DateTime attendanceDate;
+  final String? checkIn;
+  final String? checkOut;
 
+  // Approval-related
+  final String approvalStatus;  // Pending/Approved/Rejected
+  final String approverRole;    // HR/Chief/etc
 
   Attendance({
-    required this.id,
-    required this.employeeId,
-    required this.name,
-    required this.dept,
-    required this.date,
+    this.id = "",
+    required this.employee,
+    required this.employeeName,
+    required this.department,
     required this.status,
-    required this.approvalStatus,
-    required this.approverRole,
-    required this.reason,
+    required this.attendanceDate,
+    this.checkIn,
+    this.checkOut,
+    this.approvalStatus = "Pending",
+    this.approverRole = "",
   });
 
+  /// Factory from JSON (misalnya dari Frappe API)
   factory Attendance.fromJson(Map<String, dynamic> json) {
     return Attendance(
-      id: json['id'],
-      employeeId: json['employee_id'],
-      name: json['name'] ?? "-",               // default placeholder
-      dept: json['dept'] ?? "-",
-      date: DateTime.parse(json['date']),
-      status: json['status'],
-      approvalStatus: json['approval_status'],
-      approverRole: json['approver_role'],
-      reason: json['reason'] ?? "-",
+      id: json['name'] ?? '', // di Frappe primary key biasanya "name"
+      employee: json['employee'] ?? '',
+      employeeName: json['employee_name'] ?? '',
+      department: json['department'] ?? '',
+      status: json['status'] ?? '',
+      attendanceDate: DateTime.tryParse(json['attendance_date'] ?? '') ?? DateTime.now(),
+      checkIn: json['check_in'],
+      checkOut: json['check_out'],
+      approvalStatus: json['approval_status'] ?? 'Pending',
+      approverRole: json['approver_role'] ?? '',
     );
   }
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'employee_id': employeeId,
-        'name': name,
-        'dept': dept,
-        'date': date.toIso8601String(),
-        'status': status,
-        'approval_status': approvalStatus,
-        'approver_role': approverRole,
-        'reason': reason,
-      };
+  /// Convert ke JSON (misalnya buat dikirim ke API)
+  Map<String, dynamic> toJson() {
+    return {
+      "name": id,
+      "employee": employee,
+      "employee_name": employeeName,
+      "department": department,
+      "status": status,
+      "attendance_date": attendanceDate.toIso8601String(),
+      "check_in": checkIn,
+      "check_out": checkOut,
+      "approval_status": approvalStatus,
+      "approver_role": approverRole,
+    };
+  }
 
-  /// ✅ Getter HARUS di dalam class ini
+  /// Label status biar lebih user-friendly
   String get statusLabel {
     switch (status.toLowerCase()) {
-      case "hadir_wfo":
-        return "Hadir - WFO";
-      case "hadir_wfh/a":
-        return "Hadir - WFH/A";
-      case "izin":
-        return "Izin";
-      case "cuti":
+      case "present":
+        return "Hadir";
+      case "absent":
+        return "Alpa";
+      case "on leave":
         return "Cuti";
-      case "alpha":
-        return "Alpha";
+      case "wfh":
+        return "WFH";
       default:
         return status;
     }
   }
+
+  /// Convenience getters
+  bool get isApproved => approvalStatus.toLowerCase() == "approved";
+  bool get isRejected => approvalStatus.toLowerCase() == "rejected";
+  bool get isPending => approvalStatus.toLowerCase() == "pending";
+
+  /// Format tanggal biar gampang dipakai di UI
+  String get formattedDate =>
+      "${attendanceDate.day.toString().padLeft(2, '0')}-"
+      "${attendanceDate.month.toString().padLeft(2, '0')}-"
+      "${attendanceDate.year}";
 }

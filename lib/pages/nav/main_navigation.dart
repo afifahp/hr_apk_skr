@@ -17,23 +17,23 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
-  
-   Widget _getDashboard(User user) {
+
+  Widget _getDashboard(User user) {
     if (user.isEmployee) return DashboardEmployee(user: user);
     if (user.isHR) return DashboardHR(user: user);
-    if (user.isChief) {
-      return DashboardChief(user: user);
-    }
+    if (user.isChief) return DashboardChief(user: user);
+
     return const Center(child: Text("Role tidak dikenali"));
   }
 
   @override
   Widget build(BuildContext context) {
     final isChief = widget.user.isChief;
-    final isCFO = isChief && widget.user.subRole.toLowerCase() == "cfo";
+    final isCFO =
+        isChief && widget.user.subRole.toLowerCase() == "cfo";
 
-    // 🔹 Tab sesuai role
-    final tabs = [
+    // 🔹 Daftar tab sesuai role
+    final tabs = <Map<String, dynamic>>[
       {
         "label": "Home",
         "icon": Icons.home,
@@ -49,7 +49,6 @@ class _MainNavigationState extends State<MainNavigation> {
         "icon": isChief ? Icons.assignment : Icons.note_add,
         "page": AttendancePage(
           user: widget.user,
-          attendances: [], // TODO: fetch dari AttendanceService
         ),
       },
       if (!isChief || isCFO) // Gaji hanya untuk Employee, HR, CFO

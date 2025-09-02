@@ -12,7 +12,7 @@ class SalaryDetail extends StatelessWidget {
     if (slip.pdfUrl.isEmpty) {
       return Scaffold(
         appBar: AppBar(
-          title: Text("Slip Gaji - ${slip.period}"),
+          title: Text("Slip Gaji - ${slip.name}"),
         ),
         body: const Center(
           child: Text("❌ File slip gaji tidak tersedia"),
@@ -22,7 +22,7 @@ class SalaryDetail extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("Slip Gaji - ${slip.period}"),
+        title: Text("Slip Gaji - ${slip.name}"),
       ),
       body: SfPdfViewer.network(
         slip.pdfUrl,

@@ -4,6 +4,7 @@ enum ButtonType {
   login,
   simpan,
   konfirmasi,
+  ajukan,    // 🔹 baru untuk "Ajukan Permintaan"
   checkIn,
   checkOut,
   accept,
@@ -11,6 +12,7 @@ enum ButtonType {
   selesai,
   pengajuan,
   print,
+  normal,    // 🔹 Tombol custom
 }
 
 class AppButton extends StatelessWidget {
@@ -18,6 +20,8 @@ class AppButton extends StatelessWidget {
   final VoidCallback onPressed;
   final bool isLoading;
   final bool isDisabled;
+  final String? text;   // 🔹 custom label opsional
+  final String? label;  // 🔹 alias biar gak bingung
 
   const AppButton({
     super.key,
@@ -25,6 +29,8 @@ class AppButton extends StatelessWidget {
     required this.onPressed,
     this.isLoading = false,
     this.isDisabled = false,
+    this.text,
+    this.label,
   });
 
   @override
@@ -37,15 +43,24 @@ class AppButton extends StatelessWidget {
         backgroundColor: config['color'] as Color,
         foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, 48),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
       ),
       icon: config['icon'] as Icon,
       label: isLoading
           ? const SizedBox(
               width: 20,
               height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
             )
-          : Text(config['label'] as String),
+          : Text(
+              label ?? text ?? config['label'] as String, // ✅ urutan prioritas
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
     );
   }
 
@@ -68,6 +83,12 @@ class AppButton extends StatelessWidget {
           "label": "Konfirmasi",
           "color": Colors.orange,
           "icon": const Icon(Icons.check_circle),
+        };
+      case ButtonType.ajukan:
+        return {
+          "label": "Ajukan Permintaan",
+          "color": Colors.orange,
+          "icon": const Icon(Icons.send),
         };
       case ButtonType.checkIn:
         return {
@@ -110,6 +131,12 @@ class AppButton extends StatelessWidget {
           "label": "Cetak",
           "color": Colors.indigo,
           "icon": const Icon(Icons.print),
+        };
+      case ButtonType.normal:
+        return {
+          "label": "Button",
+          "color": Colors.teal,
+          "icon": const Icon(Icons.touch_app),
         };
     }
   }

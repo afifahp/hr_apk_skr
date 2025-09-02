@@ -23,7 +23,7 @@ class AttendanceRequestList extends StatelessWidget {
           margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: ListTile(
             title: Text(
-              "${attendance.statusLabel} - ${attendance.date.toLocal()}",
+              "${attendance.statusLabel} - ${attendance.attendanceDate.toLocal()}",
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             subtitle: Text("Approval: ${attendance.approvalStatus}"),
@@ -34,13 +34,13 @@ class AttendanceRequestList extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => AttendanceApprovalPage(
-                    id: attendance.id,
-                    name: attendance.employeeId, // sementara pake employeeId
-                    dept: "-", // TODO: ganti ke attendance.dept
-                    reason: "-", // TODO: ganti ke attendance.reason
-                    approver: attendance.approverRole,
-                    status: attendance.approvalStatus,
-                    isReadOnly: user.isHR, // ✅ HR hanya bisa lihat
+                    id: attendance.id,                      // ✅ dari model
+                    name: attendance.employeeName,          // ✅ tampilkan nama karyawan
+                    dept: attendance.department,            // ✅ langsung dari model
+                    reason: attendance.statusLabel,         // sementara, bisa ganti ke keterangan asli
+                    approver: attendance.approverRole,      // ✅ dari model
+                    status: attendance.approvalStatus,      // ✅ dari model
+                    isReadOnly: user.isHR,                  // ✅ HR hanya bisa lihat
                   ),
                 ),
               );

@@ -6,7 +6,9 @@ import '../pages/dashboard/dashboard_chief.dart';
 
 class RoleManager {
   static Widget getDashboard(User user) {
-    switch (user.role.toLowerCase()) {
+    final role = (user.role ?? "").toLowerCase().trim();
+
+    switch (role) {
       case 'employee':
         return DashboardEmployee(user: user);
       case 'hr':
@@ -15,8 +17,12 @@ class RoleManager {
         return DashboardChief(user: user);
       default:
         return Scaffold(
+          appBar: AppBar(
+            title: const Text("Dashboard"),
+            backgroundColor: Colors.red.shade400,
+          ),
           body: Center(
-            child: Text("Role ${user.role} tidak dikenali"),
+            child: Text("Role '${user.role}' tidak dikenali"),
           ),
         );
     }

@@ -1,251 +1,319 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:geolocator/geolocator.dart';
-import 'package:image_picker/image_picker.dart';
-// import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart'; //flutter kalo frappe gagal
 
 import '../../models/auth/user.dart';
+import '../../models/employee/employee.dart';
 import '../../widgets/app_button.dart';
+import '../../widgets/popup.dart';
+import '../auth/login_page.dart';
+import '../leave/leave_page_karyawan.dart';
+import '../attendance/attendance_form.dart';
+import '../attendance/attendance_page.dart';
 
 class DashboardEmployee extends StatefulWidget {
   final User user;
 
-  const DashboardEmployee({super.key, required this.user});
+  const DashboardEmployee({
+    super.key,
+    required this.user,
+  });
 
   @override
   State<DashboardEmployee> createState() => _DashboardEmployeeState();
 }
 
 class _DashboardEmployeeState extends State<DashboardEmployee> {
+  Employee? employee;
   bool isCheckedIn = false;
+  bool isCheckedInWFH = false;
   bool isLoading = false;
+  bool isLoadingEmployee = true;
 
-  final ImagePicker _picker = ImagePicker();
-  // late final FaceDetector _faceDetector;     //non-frappe
+  String workMode = "WFO";
+  int _selectedIndex = 0;
 
-  // /// ✅ Konfigurasi area kantor (contoh)
-  // static const double _officeLat = -6.200000;     // ganti koordinat kantor
-  // static const double _officeLng = 106.816666;
-  // static const double _radiusMeter = 150;         // radius geofence
+  @override
+  void initState() {
+    super.initState();
+    _loadEmployee();
+  }
 
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _faceDetector = FaceDetector(
-  //     options: FaceDetectorOptions(
-  //       performanceMode: FaceDetectorMode.accurate,
-  //       enableContours: false,
-  //       enableClassification: true, // supaya bisa cek eyesOpenProb, smilingProb (opsional)
-  //     ),
-  //   );
-  // }
+  Future<void> _loadEmployee() async {
+    try {
+      final res = await http.get(
+        Uri.parse(
+          "http://localhost:8000/api/resource/Employee/${widget.user.id}",
+        ),
+        headers: {
+          "Authorization": "token ${widget.user.token}",
+          "Content-Type": "application/json",
+        },
+      );
 
-  // @override
-  // void dispose() {
-  //   _faceDetector.close();
-  //   super.dispose();
-  // }
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        setState(() {
+          employee = Employee.fromJson(data["data"]);
+          isLoadingEmployee = false;
+        });
 
-  // /// 🔐 Minta izin lokasi kalau belum
-  // Future<bool> _ensureLocationPermission() async {
-  //   var perm = await Geolocator.checkPermission();
-  //   if (perm == LocationPermission.denied ||
-  //       perm == LocationPermission.deniedForever) {
-  //     perm = await Geolocator.requestPermission();
-  //   }
-  //   return perm == LocationPermission.always ||
-  //       perm == LocationPermission.whileInUse;
-  // }
+        await _checkStatus();
+      } else {
+        debugPrint("❌ Gagal load employee: ${res.body}");
+        setState(() => isLoadingEmployee = false);
+      }
+    } catch (e) {
+      debugPrint("❌ Exception load employee: $e");
+      setState(() => isLoadingEmployee = false);
+    }
+  }
 
-  // /// 📍 Cek jarak dari kantor (meter)
-  // double _distanceToOffice(Position pos) {
-  //   return Geolocator.distanceBetween(
-  //     pos.latitude, pos.longitude, _officeLat, _officeLng,
-  //   );
-  // }
-
-  // /// 🤳 Ambil foto selfie
-  // Future<XFile?> _takeSelfie() async {
-  //   return _picker.pickImage(source: ImageSource.camera, preferredCameraDevice: CameraDevice.front, imageQuality: 85);
-  // }
-
-  // /// 🙂 Minimal validasi wajah: ada wajah tunggal & cukup besar
-  // Future<bool> _hasValidFace(File imageFile) async {
-  //   final input = InputImage.fromFile(imageFile);
-  //   final faces = await _faceDetector.processImage(input);
-
-  //   if (faces.isEmpty) return false;
-  //   // jika lebih dari 1 wajah → tolak (opsional)
-  //   if (faces.length > 1) return false;
-
-  //   // cek ukuran bounding box relatif (opsional)
-  //   final box = faces.first.boundingBox;
-  //   final area = box.width * box.height;
-  //   if (area < 80 * 80) return false; // terlalu kecil → kemungkinan bukan selfie dekat
-
-  //   // opsional: cek mata terbuka / senyum (kalau plugin menyediakan)
-  //   // final f = faces.first;
-  //   // if ((f.leftEyeOpenProbability ?? 0) < 0.3 && (f.rightEyeOpenProbability ?? 0) < 0.3) return false;
-
-  //   return true;
-  // }
-
-  // /// 🧠 LOGIC FLUTTER-ONLY (tanpa Frappe)
-  // Future<void> _toggleAttendanceLocal() async {
-  //   setState(() => isLoading = true);
-  //   try {
-  //     // 1) Izin lokasi
-  //     final granted = await _ensureLocationPermission();
-  //     if (!granted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         const SnackBar(content: Text("❌ Izin lokasi ditolak")),
-  //       );
-  //       return;
-  //     }
-
-  //     // 2) Ambil posisi
-  //     final pos = await Geolocator.getCurrentPosition();
-  //     final distance = _distanceToOffice(pos);
-  //     if (distance > _radiusMeter) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         SnackBar(content: Text("❌ Di luar area kantor (${distance.toStringAsFixed(0)} m)")),
-  //       );
-  //       return;
-  //     }
-
-  //     // 3) Ambil selfie
-  //     final photo = await _takeSelfie();
-  //     if (photo == null) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         const SnackBar(content: Text("⚠️ Foto wajah wajib diambil")),
-  //       );
-  //       return;
-  //     }
-
-  //     // 4) Deteksi wajah lokal
-  //     final isFaceOk = await _hasValidFace(File(photo.path));
-  //     if (!isFaceOk) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         const SnackBar(content: Text("❌ Wajah tidak terdeteksi/invalid")),
-  //       );
-  //       return;
-  //     }
-
-  //     // 5) Toggle status lokal
-  //     setState(() => isCheckedIn = !isCheckedIn);
-
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text(isCheckedIn
-  //             ? "✅ Check-in (local) sukses"
-  //             : "✅ Check-out (local) sukses"),
-  //       ),
-  //     );
-
-  //     // (Opsional) Simpan log lokal, timestamp, path foto, koordinat, dll.
-  //     // pakai SharedPreferences / sembarang storage.
-
-  //   } catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text("⚠️ Error (local): $e")),
-  //     );
-  //   } finally {
-  //     setState(() => isLoading = false);
-  //   }
-  // }
-
-  // // Versi Frappe-mu tetap bisa dipertahankan di sini, tinggal panggil yg mana.
-  // // Future<void> _toggleAttendance() async { ... } // <= versi API
-
-  Future<void> _toggleAttendance() async {
-    setState(() => isLoading = true);
+  Future<void> _checkStatus() async {
+    if (employee == null) return;
 
     try {
-      // 🔹 1. Minta izin lokasi
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied ||
-            permission == LocationPermission.deniedForever) {
-          setState(() => isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("❌ Izin lokasi ditolak")),
-          );
-          return;
+      final resWfo = await http.get(
+        Uri.parse(
+          "http://localhost:8000/api/method/hrpay.api.attendance.get_status?employee=${employee!.employeeName}&work_mode=WFO",
+        ),
+        headers: {
+          "Authorization": "token ${widget.user.token}",
+          "Content-Type": "application/json",
+        },
+      );
+
+      final resWfh = await http.get(
+        Uri.parse(
+          "http://localhost:8000/api/method/hrpay.api.attendance.get_status?employee=${employee!.employeeName}&work_mode=WFH",
+        ),
+        headers: {
+          "Authorization": "token ${widget.user.token}",
+          "Content-Type": "application/json",
+        },
+      );
+
+      if (resWfo.statusCode == 200) {
+        final dwfo = jsonDecode(resWfo.body);
+        if (dwfo["message"] is Map) {
+          isCheckedIn = dwfo["message"]["status"] == "IN";
+          if (isCheckedIn) workMode = "WFO";
         }
       }
 
-      // 🔹 2. Ambil lokasi
-      Position pos = await Geolocator.getCurrentPosition();
-
-      // 🔹 3. Ambil foto wajah (kamera)
-      final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
-      if (photo == null) {
-        setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("⚠️ Foto wajah wajib diambil")),
-        );
-        return;
+      if (resWfh.statusCode == 200) {
+        final dwfh = jsonDecode(resWfh.body);
+        if (dwfh["message"] is Map) {
+          isCheckedInWFH = dwfh["message"]["status"] == "IN";
+          if (isCheckedInWFH) workMode = "WFH";
+        }
       }
 
-      // 🔹 4. Upload ke backend (Frappe)
-      final request = http.MultipartRequest(
-        "POST",
-        Uri.parse("https://your-frappe-api.com/api/method/attendance.toggle"),
+      setState(() {});
+    } catch (e) {
+      debugPrint("❌ Gagal cek status: $e");
+    }
+  }
+
+  Future<void> _toggleAttendance() async {
+    if (employee == null) return;
+
+    setState(() => isLoading = true);
+    try {
+      final response = await http.post(
+        Uri.parse(
+          "http://localhost:8000/api/method/hrpay.api.attendance.check_in_karyawan",
+        ),
+        headers: {
+          "Authorization": "token ${widget.user.token}",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "employee": employee!.employeeName,
+          "log_type": isCheckedIn ? "OUT" : "IN",
+          "work_mode": "WFO",
+        }),
       );
 
-      request.headers.addAll({
-        "Authorization": "token ${widget.user.token}", // kalau ada token
-      });
+      final data = jsonDecode(response.body);
 
-      request.fields.addAll({
-        "employee_id": widget.user.id,
-        "lat": pos.latitude.toString(),
-        "lng": pos.longitude.toString(),
-        "action": isCheckedIn ? "checkout" : "checkin",
-      });
-
-      request.files.add(await http.MultipartFile.fromPath("photo", photo.path));
-
-      final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
-      final data = jsonDecode(responseBody);
-
-      if (response.statusCode == 200 && data["ok"] == true) {
-        setState(() => isCheckedIn = !isCheckedIn);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data["message"] ?? "✅ Absensi berhasil")),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("❌ ${data["message"] ?? "Gagal absensi"}")),
-        );
+      if (response.statusCode == 200 && data["message"]?["success"] == true) {
+        setState(() {
+          isCheckedIn = data["message"]["status"] == "IN";
+          if (isCheckedIn) {
+            isCheckedInWFH = false;
+            workMode = "WFO";
+          }
+        });
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("⚠️ Error absensi: $e")),
+
+      PopupMessage.show(
+        context: context,
+        title: "WFO",
+        message: data["message"]?["message"] ?? "Absensi WFO berhasil",
+        success: data["message"]?["success"] == true,
       );
     } finally {
       setState(() => isLoading = false);
     }
   }
 
+  void _logout() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
+  }
+
+  Widget _buildDashboard() {
+    if (isLoadingEmployee) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (employee == null) {
+      return const Center(child: Text("❌ Data employee tidak ditemukan"));
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Karyawan
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 28,
+                child: Text(employee!.employeeName.isNotEmpty
+                    ? employee!.employeeName[0]
+                    : "K"),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Hai, ${employee!.employeeName}!",
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(
+                        "${employee!.jobPosition ?? '-'} - ${employee!.department ?? '-'}",
+                        style: const TextStyle(color: Colors.grey)),
+                  ],
+                ),
+              ),
+              IconButton(
+                  onPressed: () {}, icon: const Icon(Icons.notifications)),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Tombol Check-In/Out
+          Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  type: isCheckedIn ? ButtonType.checkOut : ButtonType.checkIn,
+                  text: isCheckedIn ? "Check-Out WFO" : "Check-In WFO",
+                  isDisabled: isCheckedInWFH,
+                  isLoading: isLoading,
+                  onPressed: _toggleAttendance,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: AppButton(
+                  type: ButtonType.checkIn,
+                  text: "Check In/Out (WFH/A)",
+                  isDisabled: isCheckedIn,
+                  isLoading: false,
+                  onPressed: () {
+                    if (!isCheckedIn) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AttendanceForm(
+                            employeeName: employee!.employeeName,
+                            department: employee!.department,
+                            user: widget.user,
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Sisa cuti
+          Text("Sisa Cuti: ${employee!.leaveBalance ?? 0} hari",
+              style: const TextStyle(fontWeight: FontWeight.w500)),
+          const SizedBox(height: 16),
+
+          // Hari Libur Mendatang
+          const Text("Hari Libur Mendatang",
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          const Divider(),
+          if (employee!.upcomingHolidays == null ||
+              employee!.upcomingHolidays!.isEmpty)
+            const Text("Tidak ada data libur"),
+          for (var libur in employee!.upcomingHolidays ?? [])
+            ListTile(
+              leading: const Icon(Icons.calendar_today),
+              title: Text(libur["holiday_name"] ?? "-"),
+              trailing: Text(libur["holiday_date"] ?? "-"),
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _onItemTapped(int index) {
+    if (index == 1) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => LeavePageKaryawan(user: widget.user)),
+      );
+    } else if (index == 2) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AttendancePage(user: widget.user),
+        ),
+      );
+    } else {
+      setState(() => _selectedIndex = index);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: AppButton(
-              type: isCheckedIn ? ButtonType.checkOut : ButtonType.checkIn,
-              onPressed: _toggleAttendance,
-              isLoading: isLoading,
-            ),
+      appBar: AppBar(
+        title: const Text('Dashboard Employee'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: _logout,
           ),
+        ],
+      ),
+      body:
+          _selectedIndex == 0 ? _buildDashboard() : const SizedBox.shrink(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: const [
+          BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard), label: "Dashboard"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.time_to_leave), label: "Izin dan Cuti"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.lock_clock_rounded), label: "Kehadiran"),
         ],
       ),
     );
