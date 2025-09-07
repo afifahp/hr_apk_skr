@@ -34,13 +34,13 @@ class AttendanceRequestList extends StatelessWidget {
                 context,
                 MaterialPageRoute(
                   builder: (context) => AttendanceApprovalPage(
-                    id: attendance.id,                      // ✅ dari model
-                    name: attendance.employeeName,          // ✅ tampilkan nama karyawan
-                    dept: attendance.department,            // ✅ langsung dari model
-                    reason: attendance.statusLabel,         // sementara, bisa ganti ke keterangan asli
-                    approver: attendance.approverRole,      // ✅ dari model
-                    status: attendance.approvalStatus,      // ✅ dari model
-                    isReadOnly: user.isHR,                  // ✅ HR hanya bisa lihat
+                    id: attendance.id,                 // ✅ dari model
+                    name: attendance.employeeName,     // ✅ nama karyawan
+                    dept: attendance.department,       // ✅ departemen
+                    reason: attendance.statusLabel,    // sementara, bisa diganti field alasan
+                    approver: attendance.approverRole, // ✅ dari model
+                    status: attendance.approvalStatus, // ✅ status approval
+                    isReadOnly: user.isHR || user.isEmployee, // ✅ HR & Employee hanya lihat
                   ),
                 ),
               );
@@ -52,71 +52,35 @@ class AttendanceRequestList extends StatelessWidget {
   }
 
   Widget _buildTrailing(BuildContext context, Attendance attendance) {
-    // === EMPLOYEE → tidak ada tombol
-    if (user.isEmployee) {
+    // === EMPLOYEE & HR → read-only, tanpa tombol
+    if (user.isEmployee || user.isHR) {
       return const SizedBox.shrink();
     }
 
-    // === HR → bisa Approve/Reject semua request
-    if (user.isHR) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.check, color: Colors.green),
-            onPressed: () => _approveRequest(context, attendance),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.red),
-            onPressed: () => _rejectRequest(context, attendance),
-          ),
-        ],
-      );
-    }
-
-    // === Chief → dibedakan berdasarkan subRole
+    // === Chief (semua CO: CTO, COO, CFO, dll) → bisa approve/reject
     if (user.isChief) {
-      if (user.isCFO) {
-        // CFO → bisa approve + salary access
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.check, color: Colors.green),
-              onPressed: () => _approveRequest(context, attendance),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close, color: Colors.red),
-              onPressed: () => _rejectRequest(context, attendance),
-            ),
-            IconButton(
-              icon: const Icon(Icons.receipt_long, color: Colors.blue),
-              onPressed: () {
-                Navigator.pushNamed(context, "/salary", arguments: user);
-              },
-            ),
-          ],
-        );
-      } else {
-        // Chief lain (CTO, COO, dll) → hanya approve/reject
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.check, color: Colors.green),
-              onPressed: () => _approveRequest(context, attendance),
-            ),
-            IconButton(
-              icon: const Icon(Icons.close, color: Colors.red),
-              onPressed: () => _rejectRequest(context, attendance),
-            ),
-          ],
-        );
-      }
+      return _buildActionButtons(context, attendance);
     }
 
-    // fallback
+    // fallback → kosong
     return const SizedBox.shrink();
+  }
+
+  /// 🔹 Widget tombol aksi (Approve / Reject)
+  Widget _buildActionButtons(BuildContext context, Attendance attendance) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.check, color: Colors.green),
+          onPressed: () => _approveRequest(context, attendance),
+        ),
+        IconButton(
+          icon: const Icon(Icons.close, color: Colors.red),
+          onPressed: () => _rejectRequest(context, attendance),
+        ),
+      ],
+    );
   }
 
   void _approveRequest(BuildContext context, Attendance attendance) {

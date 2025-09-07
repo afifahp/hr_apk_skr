@@ -1,65 +1,78 @@
 class User {
-  final String id;             // PK dari Frappe (field "name")
+  final String id;
   final String email;
-  final String role;           // employee, hr, chief
-  final String subRole;        // khusus Chief: cfo, cto, dll
-  final String token;          // session/JWT token
-  final String employeeName;   // Nama karyawan
-  final String department;     // Departemen
-  final String jobPosition;    // Posisi/Jabatan
-  final String leaveApprover;  // ✅ mandatory
+  final String role;       // role profile (e.g., "Management")
+  final String subRole;    // sub role (e.g., "Chief Officer")
+  final String employeeName;
+  final String department;
+  final String leaveApprover;
+  final List<String> roles; // SEMUA roles yang dimiliki user
+
+  final String? token;
+  final String? employee;
+  final String? jobPosition;
 
   User({
     required this.id,
     required this.email,
     required this.role,
     required this.subRole,
-    required this.token,
     required this.employeeName,
     required this.department,
-    required this.jobPosition,
     required this.leaveApprover,
+    required this.roles,
+    this.token,
+    this.employee,
+    this.jobPosition,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
+    // Ekstrak semua roles dari backend
+    List<String> rolesList = [];
+    if (json["roles"] != null && json["roles"] is List) {
+      rolesList = List<String>.from(json["roles"].map((r) => r.toString()));
+    }
+    
+    // Tambahkan role utama dan subRole jika belum ada
+    if (json["role"] != null && !rolesList.contains(json["role"].toString())) {
+      rolesList.add(json["role"].toString());
+    }
+    if (json["subRole"] != null && 
+        json["subRole"].toString().isNotEmpty &&
+        !rolesList.contains(json["subRole"].toString())) {
+      rolesList.add(json["subRole"].toString());
+    }
+
     return User(
-      id: json["name"] ?? "", // biasanya PK di Frappe
+      id: json["name"] ?? "",
       email: json["email"] ?? "",
-      role: json["role"] ?? "",
-      subRole: json["subRole"] ?? "",
-      token: json["token"] ?? "",
-      employeeName: json["employee_name"] ?? json["employeeName"] ?? "",
+      role: (json["role"] ?? "").toString().trim(),
+      subRole: (json["subRole"] ?? "").toString().trim(),
+      employeeName: json["full_name"] ?? "",
       department: json["department"] ?? "",
-      jobPosition: json["job_position"] ?? json["jobPosition"] ?? "",
-      leaveApprover: json["leave_approver"] ?? json["approver_name"] ?? "", // ✅ default ke ""
+      leaveApprover: json["leave_approver"] ?? "",
+      roles: rolesList,
+      token: json["token"],
+      employee: json["employee"],
+      jobPosition: json["jobPosition"],
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      "id": id,
-      "email": email,
-      "role": role,
-      "subRole": subRole,
-      "token": token,
-      "employee_name": employeeName,
-      "department": department,
-      "job_position": jobPosition,
-      "leave_approver": leaveApprover,
-    };
+  // 🔹 Getter yang mengecek SEMUA roles, bukan hanya role profile
+  bool get isEmployee {
+    return roles.any((r) => r.toLowerCase().contains("employee"));
   }
 
-  // ✅ alias biar gampang dipakai
-  String get name => employeeName;
+  bool get isHR {
+    return roles.any((r) => r.toLowerCase().contains("hr"));
+  }
 
-  // Getter role-based
-  bool get isEmployee => role.toLowerCase() == "employee";
-  bool get isHR => role.toLowerCase() == "hr";
-  bool get isChief => role.toLowerCase() == "chief";
-
-  bool get isCFO => isChief && subRole.toLowerCase() == "cfo";
-  bool get isOtherChief => isChief && subRole.toLowerCase() != "cfo";
-
-  bool get canAccessSalary => isEmployee || isHR || isCFO;
-  bool get canApproveLeave => isChief; // ✅ hanya Chief yang bisa approve
+  bool get isChief {
+    return roles.any((r) {
+      final roleLower = r.toLowerCase();
+      return roleLower.contains("chief") || 
+             roleLower.contains("officer") ||
+             roleLower == "co";
+    });
+  }
 }

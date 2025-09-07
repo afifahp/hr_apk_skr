@@ -8,17 +8,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'models/auth/user.dart';
 import 'pages/auth/login_page.dart';
-import 'pages/salary/salary_page.dart';
 import 'pages/attendance/attendance_page.dart';
-import 'pages/employee/employee_detail.dart';
+import 'pages/attendance/attendance_detail.dart';
+// import 'pages/employee/employee_detail.dart';
 
 Future<void> main() async {
-  // 🔹 Pastikan Flutter siap sebelum async
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 🔹 Ambil instance SharedPreferences
   SharedPreferences prefs = await SharedPreferences.getInstance();
-
   runApp(MyApp(prefs: prefs));
 }
 
@@ -31,7 +27,7 @@ class MyApp extends StatelessWidget {
     final userJson = prefs.getString("user_data");
     if (userJson != null) {
       final data = json.decode(userJson);
-      return User.fromJson(data); // pastikan User punya fromJson
+      return User.fromJson(data);
     }
     return null;
   }
@@ -40,104 +36,35 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'HRIS Mobile',
-      theme: ThemeData(primarySwatch: Colors.blue),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: const Color(0xFFF8F4FF),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.grey[50],
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(
+              color: Colors.grey.shade200,
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(
+              color: Colors.grey[200]!,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: BorderSide(color: Colors.blue.shade300, width: 1),
+          ),
+          labelStyle: TextStyle(color: Colors.black87),
+        ),
+      ),  
       debugShowCheckedModeBanner: false,
-      home: const LoginPage(), // default ke login
+      home: const LoginPage(),
       routes: {
         "/attendance": (context) {
-  return FutureBuilder<User?>(
-    future: _getUserFromPrefs(),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
-      } else if (snapshot.hasError) {
-        return Scaffold(
-          body: Center(child: Text("Error: ${snapshot.error}")),
-        );
-      } else if (snapshot.hasData && snapshot.data != null) {
-        final user = snapshot.data!;
-        return FutureBuilder<List<Attendance>>(
-          future: AttendanceService.getAllAttendance(),  // 👈 ambil data dari API/local
-          builder: (context, attendSnapshot) {
-            if (attendSnapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            } else if (attendSnapshot.hasError) {
-              return Scaffold(
-                body: Center(child: Text("Error: ${attendSnapshot.error}")),
-              );
-            } else if (attendSnapshot.hasData) {
-              return AttendancePage(
-                user: user,
-              );
-            } else {
-              return AttendancePage(
-                user: user,
-            );
-            }
-          },
-        );
-      } else {
-        return const Scaffold(
-          body: Center(child: Text("User tidak ditemukan")),
-        );
-      }
-    },
-  );
-},
-
-        "/leave": (context) {
-  return FutureBuilder<User?>(
-    future: _getUserFromPrefs(),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
-      } else if (snapshot.hasError) {
-        return Scaffold(
-          body: Center(child: Text("Error: ${snapshot.error}")),
-        );
-      } else if (snapshot.hasData && snapshot.data != null) {
-        final user = snapshot.data!;
-        return FutureBuilder<List<Attendance>>(
-          future: AttendanceService.getAllAttendance(), // ambil data dari API
-          builder: (context, attendSnapshot) {
-            if (attendSnapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            } else if (attendSnapshot.hasError) {
-              return Scaffold(
-                body: Center(child: Text("Error: ${attendSnapshot.error}")),
-              );
-            } else if (attendSnapshot.hasData) {
-              return LeavePage(
-                user: user,
-                // attendances: attendSnapshot.data!, // ✅ kirim data attendance ke LeavePage
-              );
-            } else {
-              return LeavePage(
-                user: user,
-                // attendances: const [], // kalau kosong
-              );
-            }
-          },
-        );
-      } else {
-        return const Scaffold(
-          body: Center(child: Text("User tidak ditemukan")),
-        );
-      }
-    },
-  );
-},
-
-        "/salary": (context) {
-          // 🔹 Ambil user dari SharedPreferences
           return FutureBuilder<User?>(
             future: _getUserFromPrefs(),
             builder: (context, snapshot) {
@@ -150,7 +77,25 @@ class MyApp extends StatelessWidget {
                   body: Center(child: Text("Error: ${snapshot.error}")),
                 );
               } else if (snapshot.hasData && snapshot.data != null) {
-                return SalaryPage(user: snapshot.data!);
+                final user = snapshot.data!;
+                return FutureBuilder<List<Attendance>>(
+                  future: AttendanceService.fetchAllAttendance(),
+                  builder: (context, attendSnapshot) {
+                    if (attendSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Scaffold(
+                        body: Center(child: CircularProgressIndicator()),
+                      );
+                    } else if (attendSnapshot.hasError) {
+                      return Scaffold(
+                        body: Center(
+                            child: Text("Error: ${attendSnapshot.error}")),
+                      );
+                    } else {
+                      return AttendancePage(user: user);
+                    }
+                  },
+                );
               } else {
                 return const Scaffold(
                   body: Center(child: Text("User tidak ditemukan")),
@@ -159,41 +104,93 @@ class MyApp extends StatelessWidget {
             },
           );
         },
-        "/employee": (context) {
-  return FutureBuilder<User?>(
-    future: _getUserFromPrefs(),
-    builder: (context, snapshot) {
-      if (snapshot.connectionState == ConnectionState.waiting) {
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
-      }
 
-      if (snapshot.hasError) {
-        return Scaffold(
-          body: Center(child: Text("Error: ${snapshot.error}")),
-        );
-      }
+        "/leave": (context) {
+          return FutureBuilder<User?>(
+            future: _getUserFromPrefs(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              } else if (snapshot.hasError) {
+                return Scaffold(
+                  body: Center(child: Text("Error: ${snapshot.error}")),
+                );
+              } else if (snapshot.hasData && snapshot.data != null) {
+                final user = snapshot.data!;
+                return FutureBuilder<List<Attendance>>(
+                  future: AttendanceService.fetchAllAttendance(),
+                  builder: (context, attendSnapshot) {
+                    if (attendSnapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Scaffold(
+                        body: Center(child: CircularProgressIndicator()),
+                      );
+                    } else if (attendSnapshot.hasError) {
+                      return Scaffold(
+                        body: Center(
+                            child: Text("Error: ${attendSnapshot.error}")),
+                      );
+                    } else {
+                      return LeavePage(user: user);
+                    }
+                  },
+                );
+              } else {
+                return const Scaffold(
+                  body: Center(child: Text("User tidak ditemukan")),
+                );
+              }
+            },
+          );
+        },
 
-   if (snapshot.hasData && snapshot.data != null) {
-  final user = snapshot.data!;
-  return EmployeeListPage(
-    
-  );
-}
-
-      return Scaffold(
-  appBar: AppBar(
-    title: const Text("Karyawan"),
-  ),
-  body: const Center(
-    child: Text("User tidak ditemukan"),
-  ),
-);
-
+        "/attendance/attendance_detail": (context) {
+          final attendance = ModalRoute.of(context)!.settings.arguments as Attendance;
+          return AttendanceDetailPage(attendance: attendance);
     },
-  );
-},
+
+
+        // "/salary": (context) {
+        //   return const Scaffold(
+        //     appBar: AppBar(
+        //       title: Text("Salary"),
+        //     ),
+        //     body: Center(
+        //       child: Text("Salary Page belum tersedia"),
+        //     ),
+        //   );
+        // },
+
+        "/employee": (context) {
+          return FutureBuilder<User?>(
+            future: _getUserFromPrefs(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              } else if (snapshot.hasError) {
+                return Scaffold(
+                  body: Center(child: Text("Error: ${snapshot.error}")),
+                );
+              } else if (snapshot.hasData && snapshot.data != null) {
+                return const EmployeeListPage();
+              } else {
+                return Scaffold(
+                  appBar: AppBar(
+                    title: const Text("Karyawan"),
+                  ),
+                  body: const Center(
+                    child: Text("User tidak ditemukan"),
+                  ),
+                );
+              }
+            },
+          );
+        },
+
         "/leaveApproval": (context) =>
             const Scaffold(body: Center(child: Text("Leave Approval Page"))),
       },

@@ -38,8 +38,8 @@ class AttendanceDetailPage extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("Check-in ${attendance.checkIn ?? '--:--'}"),  // ✅ dari model
-                if (attendance.checkIn != null)
+                Text("Check-in ${attendance.intime ?? '--:--'}"),  // ✅ ganti ke intime
+                if (attendance.intime != null)
                   Text(
                     "Terlambat?", // TODO: bisa hitung keterlambatan dari aturan jam masuk
                     style: TextStyle(color: Colors.red.shade400, fontSize: 12),
@@ -47,7 +47,7 @@ class AttendanceDetailPage extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Text("Check-out ${attendance.checkOut ?? '--:--'}"),   // ✅ dari model
+            Text("Check-out ${attendance.checkOut ?? '--:--'}"),   // ✅ tetap checkOut
 
             if (isWFH) ...[
               const SizedBox(height: 16),
@@ -108,15 +108,29 @@ class AttendanceDetailPage extends StatelessWidget {
   Widget _buildDetailRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label),
-          Flexible(
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+            ),
             child: Text(
               value,
-              textAlign: TextAlign.right,
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: const TextStyle(fontSize: 14),
             ),
           ),
         ],

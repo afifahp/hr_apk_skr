@@ -36,7 +36,7 @@ class EmployeeListPage extends StatelessWidget {
               final emp = employees[index];
               return ListTile(
                 title: Text(emp.employeeName),
-                subtitle: Text(emp.department ?? "Department tidak tersedia"),
+                subtitle: Text(emp.department),
                 trailing: Text(emp.status ?? ""),
                 onTap: () {
                   // Bisa navigasi ke detail page jika mau

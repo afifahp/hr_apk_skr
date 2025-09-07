@@ -12,7 +12,7 @@ class EmployeeService {
   /// HR → Ambil semua karyawan
   Future<List<Employee>> fetchAllEmployees() async {
     final response = await http.get(Uri.parse("http://localhost:8000/api/method/hrpay.api.employee.get_all_employees"), headers: headers);
-print("Status code: ${response.statusCode}");
+    print("Status code: ${response.statusCode}");
       print("Response body: ${response.body}");
     if (response.statusCode == 200) {
   final decoded = jsonDecode(response.body);
@@ -29,30 +29,39 @@ print("Status code: ${response.statusCode}");
   }
 
   /// CO → Ambil karyawan dalam divisi tertentu
-  Future<List<Employee>> fetchEmployeesByDivision(String division) async {
+  Future<List<Employee>> fetchEmployeesByDivision(String department) async {
     final response = await http.get(
-      Uri.parse("$baseUrl/employee.get_by_division?division=$division"),
+      Uri.parse("http://127.0.0.1:8000/api/method/hrpay.api.employee.get_employees_by_division?department=$department")
+,
     );
 
     if (response.statusCode == 200) {
       final jsonData = jsonDecode(response.body) as List<dynamic>;
       return jsonData.map((e) => Employee.fromJson(e)).toList();
     } else {
-      throw Exception("Gagal load karyawan divisi $division");
+      throw Exception("Gagal load karyawan divisi $department");
     }
   }
 
   /// Employee → Ambil data dirinya sendiri
-  Future<Employee> fetchSelfEmployee(String userId) async {
+  Future<Employee> fetchSelfEmployee(String sid) async {
     final response = await http.get(
-      Uri.parse("$baseUrl/employee.get_self?user=$userId"),
+      Uri.parse("http://172.31.62.57:8000/api/method/hrpay.api.employee.dashboard_employee"),
+      headers: {
+        "Cookie": "sid=$sid", // sid dari login
+        "Content-Type": "application/json",
+      },
     );
 
+    print("Dashboard response: ${response.body}");
+
     if (response.statusCode == 200) {
-      final jsonData = jsonDecode(response.body);
-      return Employee.fromJson(jsonData);
+      final decoded = jsonDecode(response.body);
+      final data = decoded['message']?['data'];
+      if (data == null) throw Exception("Data employee kosong");
+      return Employee.fromJson(data);
     } else {
-      throw Exception("Gagal load data karyawan");
+      throw Exception("Gagal load data karyawan: ${response.statusCode}");
     }
   }
 }

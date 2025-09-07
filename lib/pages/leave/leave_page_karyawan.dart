@@ -3,6 +3,7 @@ import '../../models/auth/user.dart';
 import '../../models/leave/leave_request.dart';
 import '../../services/leave_service.dart';
 import 'leave_form.dart';
+import 'leave_detail.dart';
 
 class LeavePageKaryawan extends StatefulWidget {
   final User user;
@@ -19,15 +20,16 @@ class _LeavePageKaryawanState extends State<LeavePageKaryawan> {
   bool _loading = false;
 
   // Filter
-  int? _selectedMonth; // null = semua bulan
-  int? _selectedYear; // null = semua tahun
-  String? _selectedType; // null = semua jenis
+  int? _selectedMonth;
+  int? _selectedYear;
+  String? _selectedType;
 
   final List<String> _leaveTypes = const [
     "Tahunan",
     "Sakit",
     "Melahirkan",
     "Tidak Dibayar",
+    "Izin Lainnya"
   ];
 
   final List<String> _monthNames = const [
@@ -54,14 +56,21 @@ class _LeavePageKaryawanState extends State<LeavePageKaryawan> {
   Future<void> _loadRequests() async {
     setState(() => _loading = true);
     try {
-      final data = await _leaveService.fetchLeaveRequests(
+      if (!widget.user.isEmployee) {
+        setState(() => _requests = []);
+        return;
+      }
+
+      final data = await _leaveService.fetchLeaveRequestsAuth(
         widget.user.role,
         widget.user.id,
       );
 
-      setState(() {
-        _requests = data;
-      });
+      if (mounted) {
+        setState(() {
+          _requests = data;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -81,13 +90,30 @@ class _LeavePageKaryawanState extends State<LeavePageKaryawan> {
       ),
     );
     if (result == true) {
-      _loadRequests(); // refresh list kalau ada submit baru
+      await _loadRequests(); // ✅ Tambahkan await di sini
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Pengajuan cuti berhasil disimpan")),
+        );
+      }
+    }
+  }
+
+  Future<void> _openDetail(LeaveRequest r) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LeaveDetail(leaveRequest: r),
+      ),
+    );
+
+    if (result == true) {
+      await _loadRequests(); // ✅ Tambahkan await di sini
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // ambil semua tahun dari data
     final years = _requests.map((r) => r.fromDate.year).toSet().toList()..sort();
 
     final filtered = _requests.where((r) {
@@ -106,128 +132,183 @@ class _LeavePageKaryawanState extends State<LeavePageKaryawan> {
       ),
       body: Column(
         children: [
-          // Filter
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
+          // 🔹 PERBAIKAN: Gunakan SingleChildScrollView untuk menghindari overflow
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(12),
+            child: Column(
               children: [
-                // Bulan
-                Expanded(
-                  child: DropdownButton<int?>(
-                    isExpanded: true,
-                    value: _selectedMonth,
-                    hint: const Text("Semua Bulan"),
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text("Semua Bulan"),
+                // 🔹 PERBAIKAN: Gunakan Column untuk layout mobile-friendly
+                Column(
+                  children: [
+                    // Bulan
+                    DropdownButtonFormField<int?>(
+                      value: _selectedMonth,
+                      decoration: const InputDecoration(
+                        labelText: "Bulan",
+                        border: OutlineInputBorder(),
                       ),
-                      ...List.generate(12, (i) {
-                        final month = i + 1;
-                        return DropdownMenuItem(
-                          value: month,
-                          child: Text(_monthNames[i]),
-                        );
-                      }),
-                    ],
-                    onChanged: (val) {
-                      setState(() => _selectedMonth = val);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-
-                // Tahun
-                Expanded(
-                  child: DropdownButton<int?>(
-                    isExpanded: true,
-                    value: _selectedYear,
-                    hint: const Text("Semua Tahun"),
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text("Semua Tahun"),
-                      ),
-                      ...years.map(
-                        (y) => DropdownMenuItem(
-                          value: y,
-                          child: Text("Tahun $y"),
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text("Semua Bulan"),
                         ),
-                      ),
-                    ],
-                    onChanged: (val) {
-                      setState(() => _selectedYear = val);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
+                        ...List.generate(12, (i) {
+                          final month = i + 1;
+                          return DropdownMenuItem(
+                            value: month,
+                            child: Text(_monthNames[i]),
+                          );
+                        }),
+                      ],
+                      onChanged: (val) {
+                        setState(() => _selectedMonth = val);
+                      },
+                    ),
+                    const SizedBox(height: 8),
 
-                // Jenis
-                Expanded(
-                  child: DropdownButton<String?>(
-                    isExpanded: true,
-                    value: _selectedType,
-                    hint: const Text("Semua Jenis"),
-                    items: [
-                      const DropdownMenuItem(
-                        value: null,
-                        child: Text("Semua Jenis"),
+                    // Tahun
+                    DropdownButtonFormField<int?>(
+                      value: _selectedYear,
+                      decoration: const InputDecoration(
+                        labelText: "Tahun",
+                        border: OutlineInputBorder(),
                       ),
-                      ..._leaveTypes.map(
-                        (t) => DropdownMenuItem(value: t, child: Text(t)),
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text("Semua Tahun"),
+                        ),
+                        ...years.map(
+                          (y) => DropdownMenuItem(
+                            value: y,
+                            child: Text("Tahun $y"),
+                          ),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        setState(() => _selectedYear = val);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Jenis
+                    DropdownButtonFormField<String?>(
+                      value: _selectedType,
+                      decoration: const InputDecoration(
+                        labelText: "Jenis",
+                        border: OutlineInputBorder(),
                       ),
-                    ],
-                    onChanged: (val) {
-                      setState(() => _selectedType = val);
-                    },
+                      items: [
+                        const DropdownMenuItem(
+                          value: null,
+                          child: Text("Semua Jenis"),
+                        ),
+                        ..._leaveTypes.map(
+                          (t) => DropdownMenuItem(value: t, child: Text(t)),
+                        ),
+                      ],
+                      onChanged: (val) {
+                        setState(() => _selectedType = val);
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Tombol Ajukan
+                SizedBox(
+                  width: double.infinity, // ✅ Lebar penuh untuk mobile
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    onPressed: _openForm,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(Icons.add),
+                    label: const Text(
+                      "Ajukan Cuti/Izin",
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
+
+                const SizedBox(height: 8),
+                const Divider(thickness: 1),
               ],
             ),
           ),
 
-          // List Riwayat
+          // 🔹 List Riwayat
           Expanded(
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : filtered.isEmpty
-                    ? const Center(child: Text("Belum ada riwayat cuti/izin"))
-                    : ListView.builder(
-                        itemCount: filtered.length,
-                        itemBuilder: (context, i) {
-                          final r = filtered[i];
-                          return Card(
-                            margin: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            child: ListTile(
-                              title: Text("${r.leaveType} (${r.status})"),
-                              subtitle: Text(
-                                "${r.fromDate.toString().split(' ')[0]} "
-                                "s/d ${r.toDate.toString().split(' ')[0]}",
+                    ? const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.event_note, size: 64, color: Colors.grey),
+                            SizedBox(height: 16),
+                            Text(
+                              "Belum ada riwayat cuti/izin",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
                               ),
-                              trailing: const Icon(Icons.chevron_right),
-                              onTap: () async {
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        LeaveForm(user: widget.user, request: r),
-                                  ),
-                                );
-                                if (result == true) {
-                                  _loadRequests();
-                                }
-                              },
                             ),
-                          );
-                        },
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _loadRequests,
+                        child: ListView.builder(
+                          itemCount: filtered.length,
+                          itemBuilder: (context, i) {
+                            final r = filtered[i];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              child: ListTile(
+                                title: Text(
+                                  r.leaveType,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "${r.fromDate.toString().split(' ')[0]} s/d ${r.toDate.toString().split(' ')[0]}",
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      "Status: ${r.status}",
+                                      style: TextStyle(
+                                        color: r.status == "Approved"
+                                            ? Colors.green
+                                            : r.status == "Rejected"
+                                                ? Colors.red
+                                                : Colors.orange,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () => _openDetail(r),
+                              ),
+                            );
+                          },
+                        ),
                       ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openForm,
-        child: const Icon(Icons.add),
       ),
     );
   }

@@ -8,7 +8,6 @@ import '../dashboard/dashboard_hr.dart';
 import '../dashboard/dashboard_chief.dart';
 import '../../widgets/app_button.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../widgets/popup.dart'; // 🔹 import popup
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -22,90 +21,157 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  String? _errorMessage;
+
+  // Fungsi untuk menampilkan popup/alert
+  void _showAlertDialog({required String title, required String content, bool isError = false}) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(content),
+          icon: Icon(
+            isError ? Icons.error_outline : Icons.check_circle,
+            color: isError ? Colors.red : Colors.green,
+            size: 40,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Fungsi untuk menampilkan loading dialog
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Dialog(
+          child: Padding(
+            padding: EdgeInsets.all(20.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 20),
+                Text("Sedang memproses..."),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   Future<void> _login() async {
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    // Tampilkan loading dialog
+    _showLoadingDialog();
 
     try {
       final response = await http.post(
         Uri.parse("http://localhost:8000/api/method/hrpay.api.login.auth"),
         body: {
-          "usr": _emailController.text,
-          "pwd": _passwordController.text,
+          "email": _emailController.text,
+          "password": _passwordController.text,
         },
       );
 
+      // Tutup loading dialog
+      Navigator.of(context).pop();
+
+      print("Raw response.body: ${response.body}");
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        print("Decoded JSON: $data");
 
-        final token = data['message']?['token'] ?? "";
+        final userJson = data['message']?['user'];
+        
+        if (userJson == null) {
+          _showAlertDialog(
+            title: "Login Gagal",
+            content: "Data user tidak ditemukan dalam response",
+            isError: true,
+          );
+          return;
+        }
+        
+        final user = User.fromJson(userJson);
 
-        // ✅ bikin user dari JSON
-        final user = User.fromJson(data['message']?['user'] ?? {});
-        final userWithToken = User(
-          id: user.id,
-          email: user.email,
-          role: user.role,
-          subRole: user.subRole,
-          token: token,
-          employeeName: user.employeeName,
-          department: user.department,
-          jobPosition: user.jobPosition,
-          leaveApprover: user.leaveApprover,
+        print("DEBUG User => role: ${user.role}, subRole: ${user.subRole}, isChief: ${user.isChief}");
+        print("DEBUG All roles: ${user.roles}");
+
+        // Simpan ke SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        prefs.setString('user_data', json.encode(userJson));
+        prefs.setString('user_role', user.role);
+        prefs.setString('sid', data['message']?['sid'] ?? "");
+        prefs.setString('api_key', data['message']?['api_key'] ?? "");
+        prefs.setString('api_secret', data['message']?['api_secret'] ?? "");
+
+        // Tampilkan alert sukses login
+        _showAlertDialog(
+          title: "Login Berhasil",
+          content: "Login berhasil! Mengarahkan ke dashboard...",
+          isError: false,
         );
 
-        // ✅ simpan ke local storage
-        final prefs = await SharedPreferences.getInstance();
-        prefs.setString('user_data', json.encode(data['message']?['user']));
-        prefs.setString('user_role', user.role);
-        prefs.setString('token', token);
-
-        // ✅ navigasi berdasarkan role (pakai getter dari user.dart)
-        if (userWithToken.isEmployee) {
+        // 🔹 PERUBAHAN PENTING: 
+        // Prioritaskan Chief Officer terlebih dahulu, karena seorang Chief Officer
+        // bisa juga memiliki role Employee atau HR
+        if (user.isChief) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (_) => DashboardEmployee(user: userWithToken),
-            ),
+            MaterialPageRoute(builder: (_) => DashboardChief(user: user)),
           );
-        } else if (userWithToken.isHR) {
+        } else if (user.isHR) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (_) => DashboardHR(user: userWithToken),
-            ),
+            MaterialPageRoute(builder: (_) => DashboardHR(user: user)),
           );
-        } else if (userWithToken.isChief) {
+        } else if (user.isEmployee) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (_) => DashboardChief(user: userWithToken),
-            ),
+            MaterialPageRoute(builder: (_) => DashboardEmployee(user: user)),
           );
         } else {
-          PopupMessage.show(
-            context: context,
-            title: "Login Error",
-            message: "Role tidak dikenali: ${userWithToken.role} "
-                "(subRole: ${userWithToken.subRole})",
-            success: false,
+          _showAlertDialog(
+            title: "Role Tidak Dikenali",
+            content: "Role tidak dikenali. Roles: ${user.roles.join(', ')}",
+            isError: true,
           );
         }
       } else {
-        final data = json.decode(response.body);
-        PopupMessage.show(
-          context: context,
+        _showAlertDialog(
           title: "Login Gagal",
-          message: data['message']?.toString() ?? "Terjadi kesalahan. Coba lagi.",
-          success: false,
+          content: "Login gagal: ${response.statusCode}",
+          isError: true,
         );
       }
     } catch (e) {
-      PopupMessage.show(
-        context: context,
-        title: "Error Koneksi",
-        message: e.toString(),
-        success: false,
+      // Tutup loading dialog jika masih terbuka
+      if (Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+      
+      _showAlertDialog(
+        title: "Error",
+        content: "Terjadi kesalahan: $e",
+        isError: true,
       );
     } finally {
       setState(() => _isLoading = false);
@@ -133,11 +199,13 @@ class _LoginPageState extends State<LoginPage> {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 40),
+
               const Text(
                 "Login to Manusa",
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 32),
+
               TextField(
                 controller: _emailController,
                 decoration: const InputDecoration(
@@ -149,6 +217,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 16),
+
               TextField(
                 controller: _passwordController,
                 obscureText: _obscurePassword,
@@ -159,7 +228,9 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                      _obscurePassword
+                          ? Icons.visibility_off
+                          : Icons.visibility,
                     ),
                     onPressed: () {
                       setState(() => _obscurePassword = !_obscurePassword);
@@ -168,15 +239,20 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: AppButton(
-                  type: ButtonType.login,
-                  isLoading: _isLoading,
-                  isDisabled: _isLoading,
-                  onPressed: _login,
+
+              if (_errorMessage != null)
+                Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
                 ),
+              const SizedBox(height: 16),
+
+              AppButton(
+                type: ButtonType.login,
+                isLoading: _isLoading,
+                isDisabled: _isLoading,
+                onPressed: _login,
               ),
             ],
           ),

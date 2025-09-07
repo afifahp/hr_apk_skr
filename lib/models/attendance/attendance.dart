@@ -5,7 +5,7 @@ class Attendance {
   final String department;      // departemen karyawan
   final String status;          // Hadir/Alpa/Cuti/WFH dll
   final DateTime attendanceDate;
-  final String? checkIn;
+  final String? intime;
   final String? checkOut;
 
   // Approval-related
@@ -19,7 +19,7 @@ class Attendance {
     required this.department,
     required this.status,
     required this.attendanceDate,
-    this.checkIn,
+    this.intime,
     this.checkOut,
     this.approvalStatus = "Pending",
     this.approverRole = "",
@@ -34,7 +34,7 @@ class Attendance {
       department: json['department'] ?? '',
       status: json['status'] ?? '',
       attendanceDate: DateTime.tryParse(json['attendance_date'] ?? '') ?? DateTime.now(),
-      checkIn: json['check_in'],
+      intime: json['in_time'],
       checkOut: json['check_out'],
       approvalStatus: json['approval_status'] ?? 'Pending',
       approverRole: json['approver_role'] ?? '',
@@ -50,7 +50,7 @@ class Attendance {
       "department": department,
       "status": status,
       "attendance_date": attendanceDate.toIso8601String(),
-      "check_in": checkIn,
+      "check_in": intime,
       "check_out": checkOut,
       "approval_status": approvalStatus,
       "approver_role": approverRole,

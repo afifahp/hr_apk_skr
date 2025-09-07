@@ -1,21 +1,15 @@
 import 'package:flutter/material.dart';
+import '../../models/employee/employee.dart';
+import '../../models/auth/user.dart';
 
 class EmployeeDetailPage extends StatelessWidget {
-  final String employeeId;
-  final String name;
-  final String department;
-  final String reportTo;
-  final int leaveBalance;
-  final List<String> holidays;
+  final Employee employee;
+  final User user;
 
   const EmployeeDetailPage({
     super.key,
-    required this.employeeId,
-    required this.name,
-    required this.department,
-    required this.reportTo,
-    required this.leaveBalance,
-    required this.holidays,
+    required this.employee,
+    required this.user,
   });
 
   @override
@@ -39,7 +33,9 @@ class EmployeeDetailPage extends StatelessWidget {
                 radius: 40,
                 backgroundColor: Colors.indigo,
                 child: Text(
-                  name.isNotEmpty ? name[0].toUpperCase() : "?",
+                  employee.employeeName.isNotEmpty
+                      ? employee.employeeName[0].toUpperCase()
+                      : "?",
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 28,
@@ -59,12 +55,23 @@ class EmployeeDetailPage extends StatelessWidget {
             ),
             const Divider(),
 
-            _buildReadOnlyField("ID", employeeId),
-            _buildReadOnlyField("Nama", name),
-            _buildReadOnlyField("Posisi/Dept", department),
-            _buildReadOnlyField("Report to", reportTo),
-            _buildReadOnlyField("Sisa Cuti", "$leaveBalance hari"),
-            _buildReadOnlyField("Daftar Hari Libur", holidays.join(", ")),
+            _buildReadOnlyField("ID", employee.id ?? "-"),
+            _buildReadOnlyField("Nama", employee.employeeName),
+            _buildReadOnlyField("Posisi/Dept",
+                "${employee.jobPosition ?? '-'} / ${employee.department ?? '-'}"),
+            _buildReadOnlyField("Leave Approver", user.leaveApprover ?? "-"),
+            _buildReadOnlyField(
+                "Sisa Cuti", "${employee.leaveBalance ?? 0} hari"),
+            _buildReadOnlyField(
+              "Daftar Hari Libur",
+              (employee.upcomingHolidays == null ||
+                      employee.upcomingHolidays!.isEmpty)
+                  ? "-"
+                  : employee.upcomingHolidays!
+                      .map((e) =>
+                          "${e['holiday_name'] ?? '-'} (${e['holiday_date'] ?? '-'})")
+                      .join(", "),
+            ),
 
             const Spacer(),
 
@@ -90,7 +97,7 @@ class EmployeeDetailPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100,
+            width: 120,
             child: Text(
               label,
               style: const TextStyle(fontWeight: FontWeight.w600),

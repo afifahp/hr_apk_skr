@@ -21,6 +21,7 @@ class _LeaveFormState extends State<LeaveForm> {
   final _formKey = GlobalKey<FormState>();
   final _descController = TextEditingController();
   final _approverController = TextEditingController();
+  final _departmentController = TextEditingController();
 
   final LeaveService _leaveService = LeaveService();
 
@@ -41,17 +42,20 @@ class _LeaveFormState extends State<LeaveForm> {
     "Sakit",
     "Melahirkan",
     "Tidak Dibayar",
+    "Izin Lainnya"
   ];
 
   @override
   void initState() {
     super.initState();
-    _approverController.text = widget.user.leaveApprover;
+    _approverController.text = widget.user.leaveApprover ?? "-";
+    _departmentController.text = widget.user.department ?? "-";
 
     if (widget.request != null) {
       final r = widget.request!;
       _descController.text = r.descLeave;
       _approverController.text = r.leaveApprover;
+      _departmentController.text = r.department ?? "-";
       _leaveType = r.leaveType;
       _startDate = r.fromDate;
       _endDate = r.toDate;
@@ -124,14 +128,18 @@ class _LeaveFormState extends State<LeaveForm> {
       final newRequest = LeaveRequest(
         id: 0,
         employeeName: widget.user.employeeName,
-        jobPosition: widget.user.jobPosition,
-        department: widget.user.department,
+        jobPosition: widget.user.jobPosition ?? "",
+        department: _departmentController.text.isNotEmpty
+            ? _departmentController.text
+            : widget.user.department ?? "-",
         descLeave: _leaveType == "Melahirkan" ? "" : _descController.text,
         fromDate: _startDate!,
         toDate: _halfDay ? _startDate! : _endDate!,
         leaveType: _leaveType ?? "Tahunan",
         status: "Pending",
-        leaveApprover: _approverController.text,
+        leaveApprover: _approverController.text.isNotEmpty
+        ? _approverController.text
+        : widget.user.leaveApprover ?? "-",
         halfDay: _halfDay ? 1 : 0,
         attachment: _filePath,
       );
@@ -216,7 +224,7 @@ class _LeaveFormState extends State<LeaveForm> {
               ),
               const SizedBox(height: 12),
               TextFormField(
-                initialValue: widget.user.department,
+                controller: _departmentController,
                 readOnly: true,
                 decoration: const InputDecoration(
                   labelText: "Departemen",
@@ -325,7 +333,17 @@ class _LeaveFormState extends State<LeaveForm> {
                         )
                       : const Icon(Icons.send),
                   label: Text(_isLoading ? "Mengirim..." : "Ajukan"),
-                )
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24), // lebih tebal
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(5), // 8–10px radius
+                    ),
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600, // biar tulisannya lebih tegas
+                    ),
+                  ),
+            ) 
               else
                 Row(
                   children: [

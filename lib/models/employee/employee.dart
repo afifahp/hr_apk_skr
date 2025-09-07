@@ -19,16 +19,16 @@ class Employee {
 
   factory Employee.fromJson(Map<String, dynamic> json) {
     return Employee(
-      id: json['id'] ?? json['name'] ?? '',
-      employeeName: json['full_name'] ?? json['employee_name'] ?? '',
-      department: json['department'],
-      jobPosition: json['job_position'] ?? json['designation'],
-      status: json['status'],
-      leaveBalance: json['leave_balance'] ?? 0,
-      upcomingHolidays: (json['upcoming_holidays'] as List?)
-              ?.map((e) => Map<String, dynamic>.from(e))
-              .toList() ??
-          [],
+        id: json['id'] ?? json['name'] ?? '',
+        employeeName: json['full_name'] ?? json['employee_name'] ?? '',
+        department: json['department'] ?? '',
+        jobPosition: json['job_position'] ?? json['designation'] ?? '',
+        status: json['status'] ?? '',
+        leaveBalance: json['leave_balance'] ?? 0,
+        upcomingHolidays: (json['upcoming_holidays'] as List?)
+            ?.map((e) => Map<String, dynamic>.from(e))
+            .toList() ??
+        [],
     );
   }
 

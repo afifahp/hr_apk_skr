@@ -6,25 +6,25 @@ import '../pages/dashboard/dashboard_chief.dart';
 
 class RoleManager {
   static Widget getDashboard(User user) {
-    final role = (user.role ?? "").toLowerCase().trim();
+    print("DEBUG RoleManager → rawRole=${user.role}, subRole=${user.subRole}");
 
-    switch (role) {
-      case 'employee':
-        return DashboardEmployee(user: user);
-      case 'hr':
-        return DashboardHR(user: user);
-      case 'chief':
-        return DashboardChief(user: user);
-      default:
-        return Scaffold(
-          appBar: AppBar(
-            title: const Text("Dashboard"),
-            backgroundColor: Colors.red.shade400,
-          ),
-          body: Center(
-            child: Text("Role '${user.role}' tidak dikenali"),
-          ),
-        );
+    if (user.isEmployee) {
+      return DashboardEmployee(user: user);
+    } else if (user.isHR) {
+      return DashboardHR(user: user);
+    } else if (user.isChief) {
+      return DashboardChief(user: user);
     }
+
+    // fallback kalau role nggak dikenali
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Dashboard"),
+        backgroundColor: Colors.red.shade400,
+      ),
+      body: Center(
+        child: Text("Role '${user.role}' tidak dikenali"),
+      ),
+    );
   }
 }

@@ -33,34 +33,28 @@ class _LeaveApprovalPageState extends State<LeaveApprovalPage> {
     setState(() => _isLoading = true);
 
     final success = await _leaveService.updateLeaveStatus(
-      _currentRequest.id.toString(),
+      _currentRequest.id.toString(), // ✅ pastikan String
       status,
-      approver: widget.user.name,
+      approver: widget.user.employeeName,
     );
 
     setState(() => _isLoading = false);
 
-   if (success) {
-  setState(() {
-    _currentRequest = LeaveRequest(
-      id: _currentRequest.id,
-      employeeName: _currentRequest.employeeName,
-      jobPosition: _currentRequest.jobPosition,
-      department: _currentRequest.department,
-      descLeave: _currentRequest.descLeave,
-      fromDate: _currentRequest.fromDate,
-      toDate: _currentRequest.toDate,
-      leaveType: _currentRequest.leaveType,
-      status: status, // ✅ status update
-      leaveApprover: widget.user.employeeName, // ✅ ambil nama user login
-      halfDay: _currentRequest.halfDay,
-      attachment: _currentRequest.attachment,
-    );
-  });
+    if (success) {
+      final updatedRequest = _currentRequest.copyWith(
+        status: status,
+        leaveApprover: widget.user.employeeName,
+      );
+
+      setState(() {
+        _currentRequest = updatedRequest;
+      });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Pengajuan ${status.toLowerCase()}")),
       );
+
+      Navigator.pop(context, updatedRequest);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Gagal update status")),
@@ -82,51 +76,55 @@ class _LeaveApprovalPageState extends State<LeaveApprovalPage> {
             Text("Nama: ${_currentRequest.employeeName}",
                 style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 8),
-            Text("Departmen: ${_currentRequest.department}",
+            Text("Departemen: ${_currentRequest.department}",
                 style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 8),
             Text("Jenis Cuti/Izin: ${_currentRequest.leaveType}"),
             const SizedBox(height: 8),
-            Text("Tanggal: ${_currentRequest.dateRange}"),  
+            Text("Tanggal: ${_currentRequest.dateRange}"),
             const SizedBox(height: 8),
             Text("Keterangan: ${_currentRequest.descLeave}"),
             const SizedBox(height: 8),
-            if (_currentRequest.attachment!.isNotEmpty)
-              Text("Lampiran: ${_currentRequest.attachment}"),  
+            if ((_currentRequest.attachment ?? "").isNotEmpty)
+              Text("Lampiran: ${_currentRequest.attachment}"),
             const SizedBox(height: 16),
             Text("Approver: ${_currentRequest.leaveApprover.isNotEmpty ? _currentRequest.leaveApprover : '-'}"),
             const SizedBox(height: 8),
             Text("Status: ${_currentRequest.status}",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: _currentRequest.status == "Approved"
+                  color: _currentRequest.status == "Accepted"
                       ? Colors.green
                       : _currentRequest.status == "Rejected"
                           ? Colors.red
                           : Colors.orange,
                 )),
+            const SizedBox(height: 8),
+            Text("ID: ${_currentRequest.id}",
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                )),
             const SizedBox(height: 16),
-
-            if (_currentRequest.leaveApprover.isNotEmpty)
-              Text("Disetujui oleh: ${_currentRequest.leaveApprover}"),
-
             const Spacer(),
 
-            // ✅ Kalau Chief & status masih Pending → tampilkan tombol Approve/Tolak
+            // 🔹 Tombol Approve / Reject
             if (isChief && _currentRequest.status == "Pending") ...[
               Row(
                 children: [
                   Expanded(
                     child: AppButton(
-                      type: ButtonType.accept, // ✅ tombol hijau "Terima"
+                      type: ButtonType.accept,
+                      label: "Setujui",
                       isLoading: _isLoading,
-                      onPressed: () => _updateStatus("Approved"),
+                      onPressed: () => _updateStatus("Accepted"),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: AppButton(
-                      type: ButtonType.decline, // ✅ tombol merah "Tolak"
+                      type: ButtonType.decline,
+                      label: "Tolak",
                       isLoading: _isLoading,
                       onPressed: () => _updateStatus("Rejected"),
                     ),
@@ -134,8 +132,6 @@ class _LeaveApprovalPageState extends State<LeaveApprovalPage> {
                 ],
               ),
             ],
-
-            // ✅ Kalau Chief & status sudah final → tampilkan info selesai
             if (isChief && _currentRequest.status != "Pending")
               Center(
                 child: Text(

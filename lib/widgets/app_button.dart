@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+
 enum ButtonType {
   login,
   simpan,
@@ -17,6 +18,7 @@ enum ButtonType {
 
 class AppButton extends StatelessWidget {
   final ButtonType type;
+  
   final VoidCallback onPressed;
   final bool isLoading;
   final bool isDisabled;
@@ -43,9 +45,14 @@ class AppButton extends StatelessWidget {
         backgroundColor: config['color'] as Color,
         foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, 48),
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16), // 🔹 tebal stabil
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
+        textStyle: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+      ),
       ),
       icon: config['icon'] as Icon,
       label: isLoading
@@ -81,13 +88,13 @@ class AppButton extends StatelessWidget {
       case ButtonType.konfirmasi:
         return {
           "label": "Konfirmasi",
-          "color": Colors.orange,
+          "color": Colors.lightGreen[300],
           "icon": const Icon(Icons.check_circle),
         };
       case ButtonType.ajukan:
         return {
           "label": "Ajukan Permintaan",
-          "color": Colors.orange,
+          "color": Colors.blue,
           "icon": const Icon(Icons.send),
         };
       case ButtonType.checkIn:

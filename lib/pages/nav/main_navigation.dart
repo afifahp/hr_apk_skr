@@ -5,7 +5,7 @@ import '../dashboard/dashboard_hr.dart';
 import '../dashboard/dashboard_employee.dart';
 import '../leave/leave_page.dart';
 import '../attendance/attendance_page.dart';
-import '../salary/salary_page.dart';
+// import '../salary/salary_page.dart';
 
 class MainNavigation extends StatefulWidget {
   final User user;
@@ -29,8 +29,8 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     final isChief = widget.user.isChief;
-    final isCFO =
-        isChief && widget.user.subRole.toLowerCase() == "cfo";
+    // final isCFO =
+    //     isChief && widget.user.subRole.toLowerCase() == "cfo";
 
     // 🔹 Daftar tab sesuai role
     final tabs = <Map<String, dynamic>>[
@@ -51,12 +51,12 @@ class _MainNavigationState extends State<MainNavigation> {
           user: widget.user,
         ),
       },
-      if (!isChief || isCFO) // Gaji hanya untuk Employee, HR, CFO
-        {
-          "label": "Gaji",
-          "icon": Icons.payments,
-          "page": SalaryPage(user: widget.user),
-        },
+      // if (!isChief || isCFO) // Gaji hanya untuk Employee, HR, CFO
+      //   {
+      //     "label": "Gaji",
+      //     "icon": Icons.payments,
+      //     "page": SalaryPage(user: widget.user),
+      //   },
     ];
 
     return Scaffold(
